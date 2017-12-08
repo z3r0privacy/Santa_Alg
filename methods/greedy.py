@@ -62,3 +62,36 @@ class BiggestGiftsFirstGreedyMethod(Method):
 
     self.trips = self.trips.append(trips)
 
+
+class MinimumTripsGreedMethod(Method):
+  @property
+  def name(self):
+    return "minimumtripsgreedy"
+
+  def run(self, args):
+    sorted_gifts = self.gifts.sort_values("Weight", ascending=False)
+    current_trip = 1
+    current_capacity = utils.WEIGHT_LIMIT
+    trips = []
+    while sorted_gifts.shape[0] > 0:
+      gift_added = False
+      # find gift that fits into sleigh
+      for _, gift in sorted_gifts.iterrows():
+        if current_capacity < gift.Weight:
+          continue
+
+        # found gift, add to trip and remove from remaining gifts
+        current_capacity -= gift.Weight
+        sorted_gifts = sorted_gifts.drop(gift.name)
+        trips.append({"GiftId": int(gift.GiftId), "TripId": current_trip})
+        gift_added = True
+        break
+
+      if not gift_added:
+        # we couldn't find a gift that fits into the current sleigh, start new trip
+        current_trip += 1
+        current_capacity = utils.WEIGHT_LIMIT
+        self.log.debug("Started trip {}, remaining gifts: {}".format(current_trip, sorted_gifts.shape[0]))
+
+    self.trips = self.trips.append(trips)
+

@@ -1,5 +1,9 @@
 # Installation
 
+Make sure `pip` and `virtualenv` are installed (install `pip` via your OS'
+package manager and `virtualenv` via `pip`). You might also need to install
+`python3-tk` for matplotlib.
+
 Install the virtual environment including packages with
 
 ```

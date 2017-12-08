@@ -51,16 +51,16 @@ class Method(abc.ABC):
       return False
 
     score = utils.weighted_reindeer_weariness(merged)
-    utils.log_success_or_error(self.log, score < self.current_best, "Score of the {} trips: {}".format(
-      unique_trips.shape[0], score))
+    utils.log_success_or_error(self.log, score < self.current_best, "Cost of the {} trips: {:.5f}B ({:.5f}B)".format(
+      unique_trips.shape[0], score / 1e9, (score - self.current_best) / 1e9))
 
     weights = np.asarray([trip.Weight.sum() for trip in trips])
     self.log.info("Sleigh utilization: min {:.2f}, max {:.2f}, avg {:.2f}, std {:.2f}".format(
       weights.min(), weights.max(), weights.mean(), weights.std()))
 
     costs = np.asarray([utils.weighted_trip_length(trip[["Latitude","Longitude"]], trip.Weight.tolist()) for trip in trips])
-    self.log.info("Trip costs: min {:.2f}, max {:.2f}, avg {:.2f}, std {:.2f}".format(
-      costs.min(), costs.max(), costs.mean(), costs.std()))
+    self.log.info("Trip costs: min {:.2f}M, max {:.2f}M, avg {:.2f}M, std {:.2f}k".format(
+      costs.min() / 1e6, costs.max() / 1e6, costs.mean() / 1e6, costs.std() / 1e3))
 
     return True
 
