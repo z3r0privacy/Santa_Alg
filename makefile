@@ -15,6 +15,7 @@ freeze: venv
 
 install: venv
 	$(BIN)/pip install -r requirements.txt
+	mkdir -p solutions/
 
 explore:
 	$(BIN)/ipython -m explore -i

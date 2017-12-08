@@ -27,7 +27,8 @@ make explore
 # Develop
 
 Modify existing methods in `methods/` or add new methods by deriving from the
-`Method` class in any python file in the directory.
+`Method` class and implementing the abstract methods in any python file in the
+directory.
 
 When new dependencies are added, update `requirements.txt` by calling
 `make freeze`.

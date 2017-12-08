@@ -40,14 +40,26 @@ class Method(abc.ABC):
         self.gifts.GiftId.shape[0], self.trips.GiftId.shape[0]))
       return False
 
-    if not utils.verify_weights(self.trips, self.gifts):
+    unique_trips = self.trips.TripId.unique()
+    merged = self.trips.merge(self.gifts, on="GiftId")
+    trips = [merged[merged.TripId == t] for t in unique_trips]
+
+    if not utils.verify_weights(merged):
       self.log.error("One or more trip is invalid!")
       return False
 
-    score = utils.weighted_reindeer_weariness(self.trips, self.gifts)
-    utils.log_success_or_error(self.log, score < self.current_best, "Score of the trip: {}".format(score))
+    score = utils.weighted_reindeer_weariness(merged)
+    utils.log_success_or_error(self.log, score < self.current_best, "Score of the {} trips: {}".format(
+      unique_trips.shape[0], score))
 
-    # TODO extend with more metrics such as trip count, weight utilization, etc.
+    weights = np.asarray([trip.Weight.sum() for trip in trips])
+    self.log.info("Sleigh utilization: min {:.2f}, max {:.2f}, avg {:.2f}, std {:.2f}".format(
+      weights.min(), weights.max(), weights.mean(), weights.std()))
+
+    costs = np.asarray([utils.weighted_trip_length(trip[["Latitude","Longitude"]], trip.Weight.tolist()) for trip in trips])
+    self.log.info("Trip costs: min {:.2f}, max {:.2f}, avg {:.2f}, std {:.2f}".format(
+      costs.min(), costs.max(), costs.mean(), costs.std()))
+
     return True
 
   def write_trips(self, file_name):

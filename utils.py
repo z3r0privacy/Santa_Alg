@@ -65,14 +65,12 @@ def weighted_trip_length(stops, weights):
 
   return dist
 
-def verify_weights(all_trips, gifts):
-  all_trips = all_trips.merge(gifts, on="GiftId")
+def verify_weights(all_trips):
   uniq_trips = all_trips.TripId.unique()
 
   return all(all_trips.groupby("TripId").Weight.sum() < WEIGHT_LIMIT)
 
-def weighted_reindeer_weariness(all_trips, gifts):
-  all_trips = all_trips.merge(gifts, on="GiftId")
+def weighted_reindeer_weariness(all_trips):
   uniq_trips = all_trips.TripId.unique()
 
   dist = 0.0
