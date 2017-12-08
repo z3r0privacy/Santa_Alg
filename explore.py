@@ -13,58 +13,35 @@ def plot_weights():
   sns.distplot(gifts.Weight)
   plt.show()
 
-def plot_trips(solution_file):
-  all_trips = gifts.merge(pd.read_csv(solution_file))
-
-  fig = plt.figure()
-  plt.scatter(all_trips['Longitude'].values, all_trips['Latitude'].values, c='k', alpha=0.1, s=1, linewidths=0)
-  for t in all_trips.TripId.unique():
-      previous_location = utils.NORTH_POLE
-      trip = all_trips[all_trips['TripId'] == t]
-      i = 0
-      for _, gift in trip.iterrows():
-          plt.plot([previous_location[1], gift['Longitude']], [previous_location[0], gift['Latitude']],
-                  color=plt.cm.copper_r(i/90.), alpha=0.1)
-          previous_location = tuple(gift[['Latitude', 'Longitude']])
-          i += 1
-      plt.scatter(gift['Longitude'], gift['Latitude'], c='k', alpha=0.5, s=20, linewidths=0)
-
-  plt.scatter(gift['Longitude'], gift['Latitude'], c='k', alpha=0.5, s=20, linewidths=0, label='TripEnds')
-  plt.legend(loc='upper right')
+def prepare_and_show_trip_plot():
+  plt.colorbar()
   plt.grid()
-  plt.title('TripOrder')
   plt.tight_layout()
+  plt.xlim(-180, 180)
+  plt.xlabel("Longitude")
+  plt.ylim(-90, 90)
+  plt.ylabel("Latitude")
+  plt.show()
 
+def plot_trips(solution_file):
+  trips = gifts.merge(pd.read_csv(solution_file))
+  fig = plt.figure()
+  for t in trips.TripId.unique():
+    if t % 100 == 0:
+      print(str(t) + "... ", end="", flush=True)
+    trip = trips[trips.TripId == t]
+    plt.scatter(trip.Longitude, trip.Latitude, c=trip.Weight,  alpha=0.8, s=4, linewidths=0)
+    plt.plot(trip.Longitude, trip.Latitude, 'k.-', alpha=0.005)
+  plt.title("All trips")
+  prepare_and_show_trip_plot()
 
-  # fig = plt.figure()
-  # plt.scatter(trips['Longitude'].values, trips['Latitude'].values, c='k', alpha=0.1, s=1, linewidths=0)
-  # for t in trips.TripId.unique():
-  #   previous_location = utils.NORTH_POLE
-  #   trip = trips[trips['TripId'] == t]
-  #   i = 0
-  #   for _, gift in trip.iterrows():
-  #     plt.plot([previous_location[1], gift['Longitude']], [previous_location[0], gift['Latitude']],
-  #             color=plt.cm.copper_r(i/90.), alpha=0.1)
-  #     previous_location = tuple(gift[['Latitude', 'Longitude']])
-  #     i += 1
-  #   plt.scatter(gift['Longitude'], gift['Latitude'], c='k', alpha=0.5, s=20, linewidths=0)
-
-  # plt.scatter(gift['Longitude'], gift['Latitude'], c='k', alpha=0.5, s=20, linewidths=0, label='TripEnds')
-  # plt.legend(loc='upper right')
-  # plt.grid()
-  # plt.title('TripOrder')
-  # plt.tight_layout()
-  # plt.show()
-
-  # fig = plt.figure()
-  # for t in trips.TripId.unique():
-  #   trip = trips[trips.TripId == t]
-  #   plt.scatter(trip['Longitude'], trip['Latitude'], c=trip['TripId'],  alpha=0.8, s=8, linewidths=0)
-  #   plt.plot(trip['Longitude'], trip['Latitude'], 'k.-', alpha=0.1)
-
-  # plt.colorbar()
-  # plt.grid()
-  # plt.title('Trips')
-  # plt.tight_layout()
-  # plt.show()
+def plot_trip(solution_file, t=1):
+  trips = gifts.merge(pd.read_csv(solution_file))
+  fig = plt.figure()
+  trip = trips[trips.TripId == t]
+  trip = pd.concat([pd.DataFrame([{"GiftId": 0, "Latitude": utils.NORTH_POLE[0], "Longitude": utils.NORTH_POLE[1], "TripId": t, "Weight": 0}]), trip])
+  plt.scatter(trip.Longitude, trip.Latitude, c=trip.Weight,  alpha=0.8, s=10, linewidths=4)
+  plt.plot(trip.Longitude, trip.Latitude, 'k.-', alpha=0.3)
+  plt.title("Trip " + str(t))
+  prepare_and_show_trip_plot()
 

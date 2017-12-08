@@ -17,6 +17,7 @@ import utils
 
 def main(method, solution_file, args):
   try:
+    log.info("Optimizing trips...")
     method.run(args)
     if method.evaluate_trips():
       method.write_trips(solution_file)

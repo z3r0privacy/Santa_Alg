@@ -62,6 +62,10 @@ class Method(abc.ABC):
     self.log.info("Trip costs: min {:.2f}M, max {:.2f}M, avg {:.2f}M, std {:.2f}k".format(
       costs.min() / 1e6, costs.max() / 1e6, costs.mean() / 1e6, costs.std() / 1e3))
 
+    stops = np.asarray([trip.shape[0] for trip in trips])
+    self.log.info("Stops per trip: min {}, max {}, avg {:.2f}, std {:.2f}".format(
+      stops.min(), stops.max(), stops.mean(), stops.std()))
+
     return True
 
   def write_trips(self, file_name):
