@@ -11,7 +11,7 @@ import utils
 
 class Method(abc.ABC):
   def __init__(self, gifts, log):
-    self.current_best = 460338437682.3982
+    self.current_best = 435032574114.5575
     self.gifts = gifts
     self.log = log
     self.trips = pd.DataFrame(columns=["GiftId", "TripId"])
@@ -35,6 +35,8 @@ class Method(abc.ABC):
 
     :returns: True if the trips are valid
     """
+    self.log.info("Evaluating trips...")
+
     if not set(self.gifts.GiftId) == set(self.trips.GiftId):
       self.log.error("Mismatch in the delivered gifts: {} to deliver, {} delivered".format(
         self.gifts.GiftId.shape[0], self.trips.GiftId.shape[0]))
