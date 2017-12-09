@@ -62,6 +62,6 @@ class TspOptimizeTripMethod(Method):
       trips[i] = trip
 
     # extract gift/trip mapping
-    combined_trips = np.concatenate(trips)[:, [0, 1]]
+    combined_trips = np.concatenate(trips)[:, [utils.GIFT, utils.TRIP]]
     self.trips = pd.DataFrame(combined_trips, columns=["GiftId", "TripId"])
 

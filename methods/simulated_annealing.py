@@ -6,6 +6,7 @@ import pandas as pd
 import utils
 from method import Method
 from neighbors import SwapGiftsInTripNeighbor
+from neighbors import SwapGiftsAcrossTripsNeighbor
 
 
 class SimulatedAnnealingMethod(Method):
@@ -16,8 +17,10 @@ class SimulatedAnnealingMethod(Method):
   def _get_neighbors(self, trips):
     number_of_neighbors = 10
     # TODO: Get more neighbors
-    return [SwapGiftsInTripNeighbor(trips[np.random.randint(len(trips))], self.log)
+    return [SwapGiftsInTripNeighbor(trips[np.random.randint(len(trips))], log=self.log)
         for i in range(number_of_neighbors)]
+    # return [SwapGiftsAcrossTripsNeighbor(trips, self.log)
+    #     for i in range(number_of_neighbors)]
 
   def run(self, args):
     """

@@ -10,16 +10,11 @@ from utils import memoize
 # TODO: More single-trip neighbors like 3-opt, moving 2 adjacent nodes within trip, etc.
 
 class SwapGiftsInTripNeighbor(Neighbor):
-  def __init__(self, trip, first_gift, second_gift, log):
+  def __init__(self, trip, first_gift=None, second_gift=None, log=None):
+    # when gifts to swap aren't specified, select them randomly
     self.trip = trip
-    self.first_gift = first_gift
-    self.second_gift = second_gift
-    super(SwapGiftsInTripNeighbor, self).__init__(log)
-
-  def __init__(self, trip, log):
-    self.trip = trip
-    self.first_gift = np.random.randint(len(trip))
-    self.second_gift = np.random.randint(len(trip))
+    self.first_gift = first_gift or np.random.randint(len(trip))
+    self.second_gift = second_gift or np.random.randint(len(trip))
     while self.first_gift == self.second_gift:
       self.second_gift = np.random.randint(len(trip))
     super(SwapGiftsInTripNeighbor, self).__init__(log)
@@ -46,32 +41,28 @@ class SwapGiftsInTripNeighbor(Neighbor):
     i = min(self.first_gift, self.second_gift)
     j = max(self.first_gift, self.second_gift)
 
-    lat = 2
-    lon = 3
-    weight = 4
-
     # new_self.trip = self.trip[:]
-    # old = utils.weighted_self.trip_length(pd.DataFrame(new_self.trip)[[lat, lon]], list(pd.DataFrame(new_self.trip)[weight]))
+    # old = utils.weighted_self.trip_length(pd.DataFrame(new_self.trip)[[utils.LAT, utils.LON]], list(pd.DataFrame(new_self.trip)[utils.WEIGHT]))
     # temp = new_self.trip[i]
     # new_self.trip[i] = new_self.trip[j]
     # new_self.trip[j] = temp
-    # new = utils.weighted_self.trip_length(pd.DataFrame(new_self.trip)[[lat, lon]], list(pd.DataFrame(new_self.trip)[weight]))
+    # new = utils.weighted_self.trip_length(pd.DataFrame(new_self.trip)[[utils.LAT, utils.LON]], list(pd.DataFrame(new_self.trip)[utils.WEIGHT]))
     # return new - old
 
     # set up weights
-    weight_diff = self.trip[i][weight] - self.trip[j][weight]
-    cum_weight_before_i = np.sum(self.trip[i:][:, weight]) + utils.SLEIGH_WEIGHT
-    cum_weight_before_j = np.sum(self.trip[j:][:, weight]) + utils.SLEIGH_WEIGHT
-    weight_i = self.trip[i][weight]
-    weight_j = self.trip[j][weight]
+    weight_diff = self.trip[i][utils.WEIGHT] - self.trip[j][utils.WEIGHT]
+    cum_weight_before_i = np.sum(self.trip[i:][:, utils.WEIGHT]) + utils.SLEIGH_WEIGHT
+    cum_weight_before_j = np.sum(self.trip[j:][:, utils.WEIGHT]) + utils.SLEIGH_WEIGHT
+    weight_i = self.trip[i][utils.WEIGHT]
+    weight_j = self.trip[j][utils.WEIGHT]
 
     # set up locations
-    before_i = tuple(self.trip[i-1][[lat, lon]]) if i > 0 else utils.NORTH_POLE
-    before_j = tuple(self.trip[j-1][[lat, lon]]) if j > 0 else utils.NORTH_POLE
-    at_i = tuple(self.trip[i][[lat, lon]])
-    at_j = tuple(self.trip[j][[lat, lon]])
-    after_i = tuple(self.trip[i+1][[lat, lon]]) if i < len(self.trip)-1 else utils.NORTH_POLE
-    after_j = tuple(self.trip[j+1][[lat, lon]]) if j < len(self.trip)-1 else utils.NORTH_POLE
+    before_i = tuple(self.trip[i-1][[utils.LAT, utils.LON]]) if i > 0 else utils.NORTH_POLE
+    before_j = tuple(self.trip[j-1][[utils.LAT, utils.LON]]) if j > 0 else utils.NORTH_POLE
+    at_i = tuple(self.trip[i][[utils.LAT, utils.LON]])
+    at_j = tuple(self.trip[j][[utils.LAT, utils.LON]])
+    after_i = tuple(self.trip[i+1][[utils.LAT, utils.LON]]) if i < len(self.trip)-1 else utils.NORTH_POLE
+    after_j = tuple(self.trip[j+1][[utils.LAT, utils.LON]]) if j < len(self.trip)-1 else utils.NORTH_POLE
 
     if i+1 == j:
       # swap adjacent locations is simplified
@@ -90,8 +81,8 @@ class SwapGiftsInTripNeighbor(Neighbor):
       distance = 0
       for k in range(i+1, j-1):
         distance += utils.distance(
-            tuple(self.trip[k][[lat, lon]]),
-            tuple(self.trip[k+1][[lat, lon]])
+            tuple(self.trip[k][[utils.LAT, utils.LON]]),
+            tuple(self.trip[k+1][[utils.LAT, utils.LON]])
             )
       diff = distance * weight_diff
       improvement = new_j + new_i - old_j - old_i + diff
