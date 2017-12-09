@@ -16,8 +16,16 @@ class SwapGiftsInTripNeighbor(Neighbor):
     self.second_gift = second_gift
     super(SwapGiftsInTripNeighbor, self).__init__(log)
 
+  def __init__(self, trip, log):
+    self.trip = trip
+    self.first_gift = np.random.randint(len(trip))
+    self.second_gift = np.random.randint(len(trip))
+    while self.first_gift == self.second_gift:
+      self.second_gift = np.random.randint(len(trip))
+    super(SwapGiftsInTripNeighbor, self).__init__(log)
+
   def __str__(self):
-    return "swap-{}-{}".format(self.first_gift, self.second_gift)
+    return "{}-swap-{}-{}".format(int(self.trip[0][1]), self.first_gift, self.second_gift)
 
   def _get_cost_of_tour_of_three(self, a, b, c, cumulative_weight_at_a, weight_at_b):
     return utils.distance(a, b) * cumulative_weight_at_a + \
