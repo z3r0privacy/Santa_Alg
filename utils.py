@@ -1,17 +1,32 @@
 #!/usr/bin/env python
 
 import logging
+from functools import wraps
 
 import numpy as np
-import pandas as pd
 
 import coloredlogs
-
+import pandas as pd
 from haversine import haversine
 
 NORTH_POLE = (90, 0)
 WEIGHT_LIMIT = 1000.0
 SLEIGH_WEIGHT = 10.0
+CACHE_HIT = 0
+CACHE_MISS = 0
+
+def memoize(func):
+  cache = {}
+  @wraps(func)
+  def wrap(*args):
+    global CACHE_HIT, CACHE_MISS
+    if args not in cache:
+      cache[args] = func(*args)
+      CACHE_MISS += 1
+    else:
+      CACHE_HIT += 1
+    return cache[args]
+  return wrap
 
 
 def get_logger(name):
@@ -49,6 +64,10 @@ def log_success_or_error(log, success, message):
   log_method = log.success if success else log.error
   log_method(message)
 
+@memoize
+def distance(a, b):
+  return haversine(a, b)
+
 def weighted_trip_length(stops, weights):
   tuples = [tuple(x) for x in stops.values]
   # adding the last trip back to north pole, with just the sleigh weight
@@ -59,7 +78,7 @@ def weighted_trip_length(stops, weights):
   prev_stop = NORTH_POLE
   prev_weight = sum(weights)
   for location, weight in zip(tuples, weights):
-    dist = dist + haversine(location, prev_stop) * prev_weight
+    dist = dist + distance(location, prev_stop) * prev_weight
     prev_stop = location
     prev_weight = prev_weight - weight
 

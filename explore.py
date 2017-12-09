@@ -24,7 +24,7 @@ def prepare_and_show_trip_plot():
   plt.show()
 
 def plot_trips(solution_file):
-  trips = gifts.merge(pd.read_csv(solution_file))
+  trips = pd.read_csv(solution_file).merge(gifts, on="GiftId")
   fig = plt.figure()
   for t in trips.TripId.unique():
     if t % 100 == 0:
@@ -35,8 +35,8 @@ def plot_trips(solution_file):
   plt.title("All trips")
   prepare_and_show_trip_plot()
 
-def plot_trip(solution_file, t=1):
-  trips = gifts.merge(pd.read_csv(solution_file))
+def plot_trip(solution_file, t=123):
+  trips = pd.read_csv(solution_file).merge(gifts, on="GiftId")
   fig = plt.figure()
   trip = trips[trips.TripId == t]
   trip = pd.concat([pd.DataFrame([{"GiftId": 0, "Latitude": utils.NORTH_POLE[0], "Longitude": utils.NORTH_POLE[1], "TripId": t, "Weight": 0}]), trip])

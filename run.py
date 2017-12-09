@@ -21,6 +21,8 @@ def main(method, solution_file, args):
     method.run(args)
     if method.evaluate_trips():
       method.write_trips(solution_file)
+    else:
+      method.write_trips("last-failure.csv")
   except Exception as ex:
     log.critical("{} during evaluation: {}".format(type(ex).__name__, str(ex)))
     log.critical(traceback.format_exc())
@@ -53,8 +55,8 @@ if __name__ == "__main__":
   parser.add_argument("method", choices=methods.keys(), help="method to try")
 
   # method-specific arguments
-  # parser.add_argument("--exhaustive", required=False, action="store_true",
-  #     help="True if the search should be exhaustive")
+  parser.add_argument("--from-file", required=False, help=
+      "Pattern to match files under 'data/' against which contains a solution to load as basis for the new evaluation")
 
   args = parser.parse_args()
   solution_file = "solutions/{}-{}.csv".format(args.method, datetime.utcnow().strftime("%Y-%m-%d-%H:%M:%S"))

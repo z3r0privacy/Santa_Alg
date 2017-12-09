@@ -75,5 +75,5 @@ class Method(abc.ABC):
 
     """
     self.log.info("Writing trips to {}".format(file_name))
-    self.trips.to_csv(file_name, index=False, columns=["GiftId", "TripId"])
+    self.trips[["GiftId", "TripId"]].astype(int).to_csv(file_name, index=False)
 

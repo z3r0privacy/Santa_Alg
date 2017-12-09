@@ -4,12 +4,15 @@ import utils
 from method import Method
 
 
-class GreedyMethod(Method):
+class StupidGreedyMethod(Method):
   @property
   def name(self):
-    return "greedy"
+    return "stupidgreedy"
 
   def run(self, args):
+    """
+    Idea: Create valid trips by picking gifts in order and start new trip when needed.
+    """
     current_trip = 1
     current_capacity = utils.WEIGHT_LIMIT
     trips = []
@@ -30,6 +33,10 @@ class BiggestGiftsFirstGreedyMethod(Method):
     return "biggestfirstgreedy"
 
   def run(self, args):
+    """
+    Idea: Improve on StupidGreedyMethod by treating the ~2000 gifts with largest size 50 differently:
+    Always deliver them at the beginning of a trip.
+    """
     biggest_gifts = self.gifts[self.gifts.Weight == 50]
     biggest_gifts_count = biggest_gifts.shape[0]
     other_gifts = self.gifts[self.gifts.Weight < 50]
@@ -69,6 +76,9 @@ class MinimumTripsGreedMethod(Method):
     return "minimumtripsgreedy"
 
   def run(self, args):
+    """
+    Idea: Minimize the number of trips needed to distribute all gifts. Doesn't work.
+    """
     sorted_gifts = self.gifts.sort_values("Weight", ascending=False)
     current_trip = 1
     current_capacity = utils.WEIGHT_LIMIT

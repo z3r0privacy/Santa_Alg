@@ -5,7 +5,10 @@ NICE=nice -n 19
 MET=sim
 
 run:
-	$(NICE) $(BIN)/python run.py $(MET)
+	$(NICE) $(BIN)/python run.py $(MET) $(ARGS)
+
+run-file:
+	$(NICE) $(BIN)/python run.py $(MET) --from-file=$(FILE)
 
 venv:
 	virtualenv -p python3 $(VENV)
