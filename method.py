@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 
 import abc
-import pickle
 
 import numpy as np
-import pandas as pd
 
+import pandas as pd
 import utils
 
 
 class Method(abc.ABC):
   def __init__(self, gifts, log):
-    self.current_best = 435032574114.5575
+    self.current_best = 101.49405 * 1e9
     self.gifts = gifts
     self.log = log
     self.trips = pd.DataFrame(columns=["GiftId", "TripId"])
@@ -65,6 +64,10 @@ class Method(abc.ABC):
     stops = np.asarray([trip.shape[0] for trip in trips])
     self.log.info("Stops per trip: min {}, max {}, avg {:.2f}, std {:.2f}".format(
       stops.min(), stops.max(), stops.mean(), stops.std()))
+
+    self.log.info("Retrieved distances: {}, cache hit/miss: {}/{} ({:.2f}%)".format(
+      utils.CACHE_HIT + utils.CACHE_MISS, utils.CACHE_HIT, utils.CACHE_MISS,
+      100.0 * utils.CACHE_HIT / (utils.CACHE_HIT + utils.CACHE_MISS)))
 
     return True
 
