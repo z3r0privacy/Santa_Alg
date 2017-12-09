@@ -12,8 +12,15 @@ from haversine import haversine
 NORTH_POLE = (90, 0)
 WEIGHT_LIMIT = 1000.0
 SLEIGH_WEIGHT = 10.0
+
 CACHE_HIT = 0
 CACHE_MISS = 0
+
+GIFT = 0
+TRIP = 1
+LAT = 2
+LON = 3
+WEIGHT = 4
 
 def memoize(func):
   cache = {}

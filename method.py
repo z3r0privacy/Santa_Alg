@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import abc
+import glob
 
 import numpy as np
 
@@ -28,6 +29,14 @@ class Method(abc.ABC):
     :args: Additional arguments depending on the method.
     """
     pass
+
+  def _load_trips_from_file(self, args):
+    matches = glob.glob("data/*{}*".format(args.from_file))
+    if not matches:
+      self.log.warning("No matching file found, aborting!")
+      return
+    self.log.info("Using file {} from {} matching files ({})".format(matches[0], len(matches), matches))
+    return pd.read_csv(matches[0]).merge(self.gifts, on="GiftId")
 
   def evaluate_trips(self):
     """Verifies that the constraints aren't violated and checks solution quality.
