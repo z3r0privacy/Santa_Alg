@@ -95,11 +95,11 @@ def verify_weights(all_trips):
   uniq_trips = all_trips.TripId.unique()
 
   if all(all_trips.groupby("TripId").Weight.sum() < WEIGHT_LIMIT):
-      return True
+    return True
   else :
-      for i,trip in enumerate(all_trips.groupby("TripId")):
-          if trip.Weight.sum() > WEIGHT_LIMIT:
-              self.log.warn("Weight too high: {}".format(trip.Weight.sum()))
+    for i,trip in enumerate(all_trips.groupby("TripId")):
+      if trip.Weight.sum() > WEIGHT_LIMIT:
+        self.log.warning("Weight too high: {}".format(trip.Weight.sum()))
 
 def weighted_reindeer_weariness(all_trips):
   uniq_trips = all_trips.TripId.unique()

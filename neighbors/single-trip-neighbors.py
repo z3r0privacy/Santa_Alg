@@ -22,10 +22,6 @@ class SwapGiftsInTripNeighbor(Neighbor):
   def __str__(self):
     return "{}-swap-{}-{}".format(int(self.trip[0][1]), self.first_gift, self.second_gift)
 
-  def _get_cost_of_tour_of_three(self, a, b, c, cumulative_weight_at_a, weight_at_b):
-    return utils.distance(a, b) * cumulative_weight_at_a + \
-        utils.distance(b, c) * (cumulative_weight_at_a - weight_at_b)
-
   def _get_cost_of_swapping_adjacent(self, a, b, c, d, cumulative_weight_at_a, weight_at_b, weight_at_c):
     old_cost = utils.distance(a, b) * cumulative_weight_at_a + \
         utils.distance(b, c) * (cumulative_weight_at_a - weight_at_b) + \
@@ -70,12 +66,12 @@ class SwapGiftsInTripNeighbor(Neighbor):
           cum_weight_before_i, weight_i, weight_j)
     else:
       # cost of the old segments around i/j
-      old_i = self._get_cost_of_tour_of_three(before_i, at_i, after_i, cum_weight_before_i, weight_i)
-      old_j = self._get_cost_of_tour_of_three(before_j, at_j, after_j, cum_weight_before_j, weight_j)
+      old_i = self.get_cost_of_tour_of_three(before_i, at_i, after_i, cum_weight_before_i, weight_i)
+      old_j = self.get_cost_of_tour_of_three(before_j, at_j, after_j, cum_weight_before_j, weight_j)
 
       # cost of the new segments around i/j
-      new_j = self._get_cost_of_tour_of_three(before_i, at_j, after_i, cum_weight_before_i, weight_j)
-      new_i = self._get_cost_of_tour_of_three(before_j, at_i, after_j, cum_weight_before_j + weight_diff, weight_i)
+      new_j = self.get_cost_of_tour_of_three(before_i, at_j, after_i, cum_weight_before_i, weight_j)
+      new_i = self.get_cost_of_tour_of_three(before_j, at_i, after_j, cum_weight_before_j + weight_diff, weight_i)
 
       # cost difference from weight between i and j (sub-self.trip between i+1..j-1)
       distance = 0

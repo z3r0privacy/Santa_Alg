@@ -5,8 +5,7 @@ import numpy as np
 import pandas as pd
 import utils
 from method import Method
-from neighbors import SwapGiftsInTripNeighbor
-from neighbors import SwapGiftsAcrossTripsNeighbor
+from neighbors import SwapGiftsAcrossTripsNeighbor, SwapGiftsInTripNeighbor
 
 
 class SimulatedAnnealingMethod(Method):
@@ -17,10 +16,13 @@ class SimulatedAnnealingMethod(Method):
   def _get_neighbors(self, trips):
     number_of_neighbors = 10
     # TODO: Get more neighbors
-    return [SwapGiftsInTripNeighbor(trips[np.random.randint(len(trips))], log=self.log)
-        for i in range(number_of_neighbors)]
-    # return [SwapGiftsAcrossTripsNeighbor(trips, self.log)
-    #     for i in range(number_of_neighbors)]
+
+    return [SwapGiftsAcrossTripsNeighbor(trips, self.log) for i in range(int(number_of_neighbors / 2))]
+
+    # return np.random.permutation(
+    #     [SwapGiftsInTripNeighbor(trips[np.random.randint(len(trips))], log=self.log) for i in range(int(number_of_neighbors / 2))] +
+    #     [SwapGiftsAcrossTripsNeighbor(trips, self.log) for i in range(int(number_of_neighbors / 2))]
+    #     )
 
   def run(self, args):
     """
@@ -31,7 +33,7 @@ class SimulatedAnnealingMethod(Method):
     if all_trips is None:
       return
     iterations = int(1e5)
-    initial_temperature = 1e6
+    initial_temperature = 1e5
     alpha = 0.9
 
     temperature = initial_temperature
@@ -77,7 +79,7 @@ class SimulatedAnnealingMethod(Method):
         good_solutions += 1
 
         # decrease temperature after every x good solutions
-        if good_solutions % 100:
+        if good_solutions % 1e4:
           temperature *= alpha
         continue
 

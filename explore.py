@@ -13,6 +13,9 @@ def plot_weights():
   sns.distplot(gifts.Weight)
   plt.show()
 
+def load_solution(file_name):
+  return pd.read_csv(file_name).merge(gifts, on="GiftId")
+
 def prepare_and_show_trip_plot():
   plt.colorbar()
   plt.grid()
