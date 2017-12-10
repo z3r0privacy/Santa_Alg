@@ -21,6 +21,7 @@ TRIP = 1
 LAT = 2
 LON = 3
 WEIGHT = 4
+LOCATION = [LAT, LON]
 
 def memoize(func):
   """Uses a dict to cache the results of the decorated function.
@@ -48,7 +49,7 @@ def get_location(gift):
 
   :returns: Tuple with location
   """
-  return tuple(gift[[LAT, LON]])
+  return tuple(gift[LOCATION])
 
 def get_logger(name):
   debug_levelv_num = 21
@@ -94,7 +95,9 @@ def distance(a, b):
 
   :returns: Haversine distance between the locations
   """
-  return _actually_get_distance(a, b) if a < b else _actually_get_distance(b, a)
+  aa = tuple(a)
+  bb = tuple(b)
+  return _actually_get_distance(aa, bb) if aa < bb else _actually_get_distance(bb, aa)
 
 @memoize
 def _actually_get_distance(a, b):
@@ -103,32 +106,38 @@ def _actually_get_distance(a, b):
 def weighted_trip_length(stops, weights):
   """Calculates the cost of the trip.
 
-  :stops: Pandas DataFrame with the locations of the trip
-  :weights: Pandas Series with the weights of the gifts
+  :stops: Pandas DataFrame or Numpy array with the locations of the trip
+  :weights: Pandas Series or Numpy array with the weights of the gifts
 
   :returns: The cost of the trip
   """
-  tuples = [tuple(x) for x in stops.values]
-  weights = [w for w in weights.values]
+  tuples = [tuple(x) for x in (stops.values if isinstance(stops, pd.DataFrame) else stops)]
+  weights = (weights.values if isinstance(weights, pd.Series) else weights).tolist()
+  if len(tuples) != len(weights):
+      raise ValueError("Stops/weights dimension mismatch!")
+  # print("length of trip", len(tuples))
 
   # adding the last trip back to north pole, with just the sleigh weight
   tuples.append(NORTH_POLE)
   weights.append(SLEIGH_WEIGHT)
 
-  dist = 0.0
+  cost = 0.0
   prev_stop = NORTH_POLE
   prev_weight = sum(weights)
+  dist = 0.0
   for location, weight in zip(tuples, weights):
-    dist = dist + distance(location, prev_stop) * prev_weight
+    cost += distance(location, prev_stop) * prev_weight
+    dist += distance(location, prev_stop)
     prev_stop = location
     prev_weight = prev_weight - weight
+  # print("DISTANCE\t", dist)
+  return cost
 
-  return dist
-
-def verify_weights(all_trips):
+def verify_weights(all_trips, log):
   """Verifies that none of the trips exceeds the weight limit.
 
   :all_trips: Pandas DataFrame with the trips to verify
+  :log: Log for informing about invalid trips
 
   :returns: True if all trips are valid
   """
@@ -136,7 +145,7 @@ def verify_weights(all_trips):
   for trip in all_trips.groupby("TripId"):
     this_trip = trip[1]
     if this_trip.Weight.sum() > WEIGHT_LIMIT:
-      self.log.warning("Weight too high: {}".format(this_trip.Weight.sum()))
+      log.warning("Weight too high: {}".format(this_trip.Weight.sum()))
       has_invalid_trip = True
   return not has_invalid_trip
 

@@ -1,5 +1,6 @@
 last-failure.csv
 solutions/
+old-solutions/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -18,13 +18,17 @@ freeze: venv
 
 install: venv
 	$(BIN)/pip install -r requirements.txt
-	mkdir -p solutions/
+	mkdir -p {old-,}solutions/
 
 explore:
 	$(BIN)/ipython -m explore -i
 
 uninstall:
 	rm -rf $(VENV)
+
+archive:
+	mv solutions/*.csv old-solutions/
+	for sol in old-solutions/*.csv; do gzip $$sol; done
 
 clean:
 	find . -type f -name '*.pyc' -exec rm -f {} +

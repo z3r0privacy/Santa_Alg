@@ -54,7 +54,7 @@ class Method(abc.ABC):
     merged = self.trips.merge(self.gifts, on="GiftId")
     trips = [merged[merged.TripId == t] for t in unique_trips]
 
-    if not utils.verify_weights(merged):
+    if not utils.verify_weights(merged, self.log):
       self.log.error("One or more trip is invalid!")
       return False
 

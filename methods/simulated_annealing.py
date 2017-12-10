@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import utils
 from method import Method
-from neighbors import SwapGiftsAcrossTripsNeighbor, SwapGiftsInTripNeighbor
+from neighbors import SwapGiftsAcrossTripsNeighbor, SwapGiftsInTripNeighbor, SplitOneTripIntoTwoNeighbor
 
 
 class SimulatedAnnealingMethod(Method):
@@ -17,7 +17,9 @@ class SimulatedAnnealingMethod(Method):
     number_of_neighbors = 10
     # TODO: Get more neighbors
 
-    return [SwapGiftsAcrossTripsNeighbor(trips, self.log) for i in range(int(number_of_neighbors / 2))]
+    return [SplitOneTripIntoTwoNeighbor(trips, self.log) for i in range(number_of_neighbors)]
+
+    # return [SwapGiftsAcrossTripsNeighbor(trips, self.log) for i in range(number_of_neighbors)]
 
     # return np.random.permutation(
     #     [SwapGiftsInTripNeighbor(trips[np.random.randint(len(trips))], log=self.log) for i in range(int(number_of_neighbors / 2))] +
