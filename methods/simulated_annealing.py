@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
 import numpy as np
-
 import pandas as pd
+
 import utils
 from method import Method
 from neighbor import Neighbor
 from neighbors import (MoveGiftToAnotherTripNeighbor,
+                       MoveGiftToLightestTripNeighbor,
                        SplitOneTripIntoTwoNeighbor,
                        SwapGiftsAcrossTripsNeighbor, SwapGiftsInTripNeighbor)
 
@@ -17,9 +18,10 @@ class SimulatedAnnealingMethod(Method):
     return "sim"
 
   def _get_neighbors(self, trips):
-    number_of_same_neighbor = 2
+    number_of_same_neighbor = 1
 
     # return [MoveGiftToAnotherTripNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
+    # return [MoveGiftToLightestTripNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
 
     return np.random.permutation(np.array(
       [[neighbor(trips, self.log) for i in range(number_of_same_neighbor)]
@@ -37,6 +39,7 @@ class SimulatedAnnealingMethod(Method):
     iterations = int(1e5)
     initial_temperature = 1e6
     alpha = 0.9
+    moves = {}
 
     temperature = initial_temperature
 
@@ -51,10 +54,10 @@ class SimulatedAnnealingMethod(Method):
     last_rejected_bad_solutions = 0
     last_cost_change = 0
     total_cost_change = 0
-    log_interval = 1e3
+    log_interval = 1e2
     for i in range(iterations):
       if i % log_interval == 0:
-        self.log.debug("{:>5}/{}: T={:>9.1f}, since {:>5}: {:>4.1f}/{:>4.1f}/{:>4.1f}% good/acc/rej, cost: {:>9.1f}k".format(
+        self.log.debug("{:>6}/{}: T={:>9.1f}, since {:>6}: {:>4.1f}/{:>4.1f}/{:>4.1f}% good/acc/rej, cost: {:>9.1f}k".format(
           i, iterations, temperature, i - log_interval,
           100.0 * (good_solutions - last_good_solutions) / log_interval,
           100.0 * (accepted_bad_solutions - last_accepted_bad_solutions) / log_interval,
@@ -72,10 +75,8 @@ class SimulatedAnnealingMethod(Method):
       # select neighbor - try all neighbors to find any good (or the least bad) neighbor
       neighbors = self._get_neighbors(trips)
       best_bad_neighbor = neighbors[0]
-      for j in range(len(neighbors)):
+      for j in range(1+0*len(neighbors)):
         neighbor = neighbors[j]
-        # neighbor = neighbors[np.random.randint(len(neighbors))]
-        # neighbors.remove(neighbor)
         if neighbor.cost_delta < 0:
           break
         if best_bad_neighbor.cost_delta > neighbor.cost_delta:
@@ -86,6 +87,9 @@ class SimulatedAnnealingMethod(Method):
         total_cost_change += neighbor.cost_delta
         neighbor.apply()
         good_solutions += 1
+        if not neighbor.__class__.__name__ in moves.keys():
+          moves[neighbor.__class__.__name__] = 0
+        moves[neighbor.__class__.__name__] += 1
         continue
 
       accepting_probability = np.exp(-best_bad_neighbor.cost_delta/temperature)
@@ -95,6 +99,9 @@ class SimulatedAnnealingMethod(Method):
         total_cost_change += best_bad_neighbor.cost_delta
         best_bad_neighbor.apply()
         accepted_bad_solutions += 1
+        if not neighbor.__class__.__name__ in moves.keys():
+          moves[neighbor.__class__.__name__] = 0
+        moves[neighbor.__class__.__name__] += 1
       else:
         # self.log.debug("Rejecting worse neighbor {:>20} (by {:>9.1f}, {:>4.1f}% chance, T={:>9.1f})".format(
         #   str(best_bad_neighbor), best_bad_neighbor.cost_delta, 100 * accepting_probability, temperature))
@@ -108,6 +115,7 @@ class SimulatedAnnealingMethod(Method):
     self.log.info("Evaluated neighbors: {} good, {} accepted/{} rejected bad solutions ({:.1f}/{:.1f}/{:.1f}%)".format(
       good_solutions, accepted_bad_solutions, rejected_bad_solutions,
       100.0 * good_solutions / iterations, 100.0 * accepted_bad_solutions / iterations, 100 * rejected_bad_solutions / iterations))
+    self.log.info("Applied the following moves: {}".format(moves))
     # extract gift/trip mapping
     combined_trips = np.concatenate(trips)[:, [0, 1]]
     self.trips = pd.DataFrame(combined_trips, columns=["GiftId", "TripId"])

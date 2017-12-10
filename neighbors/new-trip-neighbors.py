@@ -13,6 +13,8 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
     # when trip to split isn't specified, select one randomly
     self.trips = trips
     self.trip_to_split = np.random.randint(len(trips))
+    while len(self.trips[self.trip_to_split]) < 2:
+      self.trip_to_split = np.random.randint(len(trips))
     self.index_to_split = None
     super(SplitOneTripIntoTwoNeighbor, self).__init__(log)
 
