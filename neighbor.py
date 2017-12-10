@@ -8,6 +8,8 @@ import utils
 
 
 class Neighbor(abc.ABC):
+  VERIFY_COST_DELTA = True
+
   def __init__(self, log):
     self.log = log
 

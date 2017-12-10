@@ -55,11 +55,13 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
 
     source = self.trips[self.source_trip]
     destination = self.trips[self.destination_trip]
+
+    if self.VERIFY_COST_DELTA:
+      old = utils.weighted_trip_length(source[:, utils.LOCATION], source[:, utils.WEIGHT]) + \
+          utils.weighted_trip_length(destination[:, utils.LOCATION], destination[:, utils.WEIGHT])
+
     gift = source[self.gift_to_move]
     gift[utils.TRIP] = self.destination_trip+1
-
-    # old = utils.weighted_trip_length(source[:, utils.LOCATION], source[:, utils.WEIGHT]) + \
-    #     utils.weighted_trip_length(destination[:, utils.LOCATION], destination[:, utils.WEIGHT])
 
     destination = np.insert(destination, self.destination_insertion_index, gift, axis=0)
     self.trips[self.destination_trip] = destination
@@ -67,10 +69,10 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
     source = np.delete(source, self.gift_to_move, axis=0)
     self.trips[self.source_trip] = source
 
-    # new = utils.weighted_trip_length(source[:, utils.LOCATION], source[:, utils.WEIGHT]) + \
-    #     utils.weighted_trip_length(destination[:, utils.LOCATION], destination[:, utils.WEIGHT])
-
-    # utils.verify_costs_are_equal(self.cost_delta, new-old)
+    if self.VERIFY_COST_DELTA:
+      new = utils.weighted_trip_length(source[:, utils.LOCATION], source[:, utils.WEIGHT]) + \
+          utils.weighted_trip_length(destination[:, utils.LOCATION], destination[:, utils.WEIGHT])
+      utils.verify_costs_are_equal(self.cost_delta, new-old)
 
 
 class MoveGiftToLightestTripNeighbor(MoveGiftToAnotherTripNeighbor):
@@ -159,6 +161,10 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
     first_trip = self.trips[self.first_trip]
     second_trip = self.trips[self.second_trip]
 
+    if self.VERIFY_COST_DELTA:
+      old = utils.weighted_trip_length(first_trip[:, utils.LOCATION], first_trip[:, utils.WEIGHT]) + \
+          utils.weighted_trip_length(second_trip[:, utils.LOCATION], second_trip[:, utils.WEIGHT])
+
     # extract insertees now (before they're removed) and update their trip assignment
     first_gift_row = first_trip[self.first_gift]
     first_gift_row[utils.TRIP] = self.second_trip+1
@@ -178,4 +184,9 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
     index_to_remove = self.second_gift if self.second_gift < self.second_trip_insertion_index else self.second_gift + 1
     second_trip = np.delete(second_trip, index_to_remove, axis=0)
     self.trips[self.second_trip] = second_trip
+
+    if self.VERIFY_COST_DELTA:
+      new = utils.weighted_trip_length(first_trip[:, utils.LOCATION], first_trip[:, utils.WEIGHT]) + \
+          utils.weighted_trip_length(second_trip[:, utils.LOCATION], second_trip[:, utils.WEIGHT])
+      utils.verify_costs_are_equal(self.cost_delta, new-old)
 

@@ -101,8 +101,16 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
 
     trip = self.trips[self.trip_to_split]
 
+    if self.VERIFY_COST_DELTA:
+      old = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
+
     new_trip = trip[self.index_to_split:]
     new_trip[:, utils.TRIP] = len(self.trips) + 1
     self.trips[self.trip_to_split] = trip[:self.index_to_split]
     self.trips.append(new_trip)
+
+    if self.VERIFY_COST_DELTA:
+      new = utils.weighted_trip_length(self.trips[self.trip_to_split][:, utils.LOCATION], self.trips[self.trip_to_split][:, utils.WEIGHT]) + \
+          utils.weighted_trip_length(new_trip[:, utils.LOCATION], new_trip[:, utils.WEIGHT])
+      utils.verify_costs_are_equal(self.cost_delta, new-old)
 

@@ -38,14 +38,6 @@ class SwapGiftsInTripNeighbor(Neighbor):
     i = min(self.first_gift, self.second_gift)
     j = max(self.first_gift, self.second_gift)
 
-    # new_self.trip = self.trip[:]
-    # old = utils.weighted_self.trip_length(pd.DataFrame(new_self.trip)[[utils.LAT, utils.LON]], list(pd.DataFrame(new_self.trip)[utils.WEIGHT]))
-    # temp = new_self.trip[i]
-    # new_self.trip[i] = new_self.trip[j]
-    # new_self.trip[j] = temp
-    # new = utils.weighted_self.trip_length(pd.DataFrame(new_self.trip)[[utils.LAT, utils.LON]], list(pd.DataFrame(new_self.trip)[utils.WEIGHT]))
-    # return new - old
-
     # set up weights
     weight_diff = self.trip[i][utils.WEIGHT] - self.trip[j][utils.WEIGHT]
     cum_weight_before_i = np.sum(self.trip[i:][:, utils.WEIGHT]) + utils.SLEIGH_WEIGHT
@@ -88,5 +80,13 @@ class SwapGiftsInTripNeighbor(Neighbor):
 
   def apply(self):
     # self.log.debug("Applying {}".format(self))
+
+    if self.VERIFY_COST_DELTA:
+      old = utils.weighted_trip_length(self.trip[:, utils.LOCATION], self.trip[:, utils.WEIGHT])
+
     self.trip[[self.first_gift, self.second_gift]] = self.trip[[self.second_gift, self.first_gift]]
+
+    if self.VERIFY_COST_DELTA:
+      new = utils.weighted_trip_length(self.trip[:, utils.LOCATION], self.trip[:, utils.WEIGHT])
+      utils.verify_costs_are_equal(self.cost_delta, new-old)
 
