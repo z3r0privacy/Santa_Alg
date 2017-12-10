@@ -7,16 +7,15 @@ import utils
 from neighbor import Neighbor
 from utils import memoize
 
-# TODO: More single-trip neighbors like 3-opt, moving 2 adjacent nodes within trip, etc.
 
 class SwapGiftsInTripNeighbor(Neighbor):
-  def __init__(self, trip, first_gift=None, second_gift=None, log=None):
+  def __init__(self, trips, log):
     # when gifts to swap aren't specified, select them randomly
-    self.trip = trip
-    self.first_gift = first_gift or np.random.randint(len(trip))
-    self.second_gift = second_gift or np.random.randint(len(trip))
+    self.trip = trips[np.random.randint(len(trips))]
+    self.first_gift = np.random.randint(len(self.trip))
+    self.second_gift = np.random.randint(len(self.trip))
     while self.first_gift == self.second_gift:
-      self.second_gift = np.random.randint(len(trip))
+      self.second_gift = np.random.randint(len(self.trip))
     super(SwapGiftsInTripNeighbor, self).__init__(log)
 
   def __str__(self):

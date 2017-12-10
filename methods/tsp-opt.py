@@ -45,6 +45,7 @@ class TspOptimizeTripMethod(Method):
         for j in range(trip.shape[0]):
           if j == index:
             continue
+          # this is broken (signature change in constructor)
           new_neighbor = SwapGiftsInTripNeighbor(trip, index, j, self.log)
           if not neighbor or new_neighbor.cost_delta < neighbor.cost_delta:
             neighbor = new_neighbor

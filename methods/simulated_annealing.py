@@ -5,7 +5,10 @@ import numpy as np
 import pandas as pd
 import utils
 from method import Method
-from neighbors import SwapGiftsAcrossTripsNeighbor, SwapGiftsInTripNeighbor, SplitOneTripIntoTwoNeighbor
+from neighbor import Neighbor
+from neighbors import (MoveGiftToAnotherTripNeighbor,
+                       SplitOneTripIntoTwoNeighbor,
+                       SwapGiftsAcrossTripsNeighbor, SwapGiftsInTripNeighbor)
 
 
 class SimulatedAnnealingMethod(Method):
@@ -14,17 +17,14 @@ class SimulatedAnnealingMethod(Method):
     return "sim"
 
   def _get_neighbors(self, trips):
-    number_of_neighbors = 10
-    # TODO: Get more neighbors
+    number_of_same_neighbor = 2
 
-    return [SplitOneTripIntoTwoNeighbor(trips, self.log) for i in range(number_of_neighbors)]
+    # return [MoveGiftToAnotherTripNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
 
-    # return [SwapGiftsAcrossTripsNeighbor(trips, self.log) for i in range(number_of_neighbors)]
-
-    # return np.random.permutation(
-    #     [SwapGiftsInTripNeighbor(trips[np.random.randint(len(trips))], log=self.log) for i in range(int(number_of_neighbors / 2))] +
-    #     [SwapGiftsAcrossTripsNeighbor(trips, self.log) for i in range(int(number_of_neighbors / 2))]
-    #     )
+    return np.random.permutation(np.array(
+      [[neighbor(trips, self.log) for i in range(number_of_same_neighbor)]
+        for neighbor in Neighbor.__subclasses__()]
+      ).flatten())
 
   def run(self, args):
     """
@@ -35,7 +35,7 @@ class SimulatedAnnealingMethod(Method):
     if all_trips is None:
       return
     iterations = int(1e5)
-    initial_temperature = 1e5
+    initial_temperature = 1e6
     alpha = 0.9
 
     temperature = initial_temperature
@@ -51,7 +51,7 @@ class SimulatedAnnealingMethod(Method):
     last_rejected_bad_solutions = 0
     last_cost_change = 0
     total_cost_change = 0
-    log_interval = 1000
+    log_interval = 1e3
     for i in range(iterations):
       if i % log_interval == 0:
         self.log.debug("{:>5}/{}: T={:>9.1f}, since {:>5}: {:>4.1f}/{:>4.1f}/{:>4.1f}% good/acc/rej, cost: {:>9.1f}k".format(
@@ -62,8 +62,8 @@ class SimulatedAnnealingMethod(Method):
           (total_cost_change - last_cost_change) / 1e3))
         last_cost_change = total_cost_change
         last_good_solutions = good_solutions
-        last_acceptedbad_solutions = accepted_bad_solutions
-        last_rejectedbad_solutions = rejected_bad_solutions
+        last_accepted_bad_solutions = accepted_bad_solutions
+        last_rejected_bad_solutions = rejected_bad_solutions
 
       # decrease temperature after every x solutions
       if i > 0 and i % 1e2 == 0:

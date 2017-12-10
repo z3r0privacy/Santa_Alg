@@ -7,6 +7,7 @@ import utils
 from neighbor import Neighbor
 from utils import memoize
 
+
 class SplitOneTripIntoTwoNeighbor(Neighbor):
   def __init__(self, trips, log):
     # when trip to split isn't specified, select one randomly

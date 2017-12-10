@@ -30,6 +30,7 @@ def memoize(func):
 
   :returns: Decorated function
   """
+  # TODO: Use a limited (LRU) cache instead...
   cache = {}
   @wraps(func)
   def wrap(*args):
@@ -145,7 +146,7 @@ def verify_weights(all_trips, log):
   for trip in all_trips.groupby("TripId"):
     this_trip = trip[1]
     if this_trip.Weight.sum() > WEIGHT_LIMIT:
-      log.warning("Weight too high: {}".format(this_trip.Weight.sum()))
+      log.warning("Trip {} weight: {}".format(this_trip.TripId.unique(), this_trip.Weight.sum()))
       has_invalid_trip = True
   return not has_invalid_trip
 
@@ -161,4 +162,15 @@ def weighted_reindeer_weariness(all_trips):
     this_trip = trip[1]
     cost += weighted_trip_length(this_trip[["Latitude","Longitude"]], this_trip.Weight)
   return cost
+
+def verify_costs_are_equal(a, b):
+  """Checks that the two costs are (roughly) equal
+
+  :a: First cost
+  :b: Second cost
+  """
+  if round(a, 1) != round(b, 1):
+    print(a)
+    print(b)
+    raise ValueError("Cost mismatch!")
 

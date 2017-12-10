@@ -7,7 +7,63 @@ import utils
 from neighbor import Neighbor
 from utils import memoize
 
-# TODO: More two-trip neighbors like swapping multiple elements
+
+class MoveGiftToAnotherTripNeighbor(Neighbor):
+  def __init__(self, trips, log):
+    self.trips = trips
+    self.source_trip = np.random.randint(len(trips))
+    self.gift_to_move = np.random.randint(len(self.trips[self.source_trip]))
+    self.destination_trip = self._get_valid_target_trip()
+    self.destination_insertion_index = None
+    super(MoveGiftToAnotherTripNeighbor, self).__init__(log)
+
+  def _get_valid_target_trip(self):
+    weight_of_gift = self.trips[self.source_trip][self.gift_to_move][utils.WEIGHT]
+    for i in np.random.permutation(len(self.trips)):
+      if i != self.source_trip and np.sum(self.trips[i][:, utils.WEIGHT]) + weight_of_gift <= utils.WEIGHT_LIMIT:
+        return i
+
+  def __str__(self):
+    return "move-{}:{}-to-{}:{}".format(self.source_trip, self.gift_to_move,
+        self.destination_trip, self.destination_insertion_index)
+
+  @property
+  @memoize
+  def cost_delta(self):
+    source = self.trips[self.source_trip]
+    gift = source[self.gift_to_move]
+
+    self.destination_insertion_index, cost_to_insert = self._find_best_insertion_index(
+        self.trips[self.destination_trip], gift)
+
+    cost_to_remove = self._cost_to_remove_gift(source, self.gift_to_move)
+
+    total_cost = cost_to_insert + cost_to_remove
+
+    return total_cost
+
+  def apply(self):
+    # self.log.debug("Applying {}".format(self))
+
+    source = self.trips[self.source_trip]
+    destination = self.trips[self.destination_trip]
+    gift = source[self.gift_to_move]
+    gift[utils.TRIP] = self.destination_trip+1
+
+    # old = utils.weighted_trip_length(source[:, utils.LOCATION], source[:, utils.WEIGHT]) + \
+    #     utils.weighted_trip_length(destination[:, utils.LOCATION], destination[:, utils.WEIGHT])
+
+    destination = np.insert(destination, self.destination_insertion_index, gift, axis=0)
+    self.trips[self.destination_trip] = destination
+
+    source = np.delete(source, self.gift_to_move, axis=0)
+    self.trips[self.source_trip] = source
+
+    # new = utils.weighted_trip_length(source[:, utils.LOCATION], source[:, utils.WEIGHT]) + \
+    #     utils.weighted_trip_length(destination[:, utils.LOCATION], destination[:, utils.WEIGHT])
+
+#     utils.verify_costs_are_equal(self.cost_delta, new-old)
+
 
 class SwapGiftsAcrossTripsNeighbor(Neighbor):
   def __init__(self, trips, log):
@@ -39,72 +95,6 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
       if (first_weight - weight_of_first_gift + weight_of_second_gift <= utils.WEIGHT_LIMIT and
           second_weight + weight_of_first_gift - weight_of_second_gift <= utils.WEIGHT_LIMIT):
         return gift
-
-  def _find_best_insertion_index(self, trip, gift, index_to_be_removed):
-    minimum_cost = np.finfo(np.float64).max
-    best_index = None
-    for i, row in enumerate(trip):
-      if i == index_to_be_removed or i+1 == index_to_be_removed:
-        # don't compute insertion where we're about to remove
-        continue
-
-      # note: we evaluate inserting before the current node - that means we won't try to insert
-      # in the very end of the tour
-
-      # we need to consider the distance from NP to the first gift - unless we're evaluating the first gift
-      distance = 0 if i == 0 else utils.distance(utils.NORTH_POLE, tuple(trip[0][[utils.LAT, utils.LON]]))
-      # add distances up until the one before the current
-      for k in range(i-1):
-        distance += utils.distance(
-            tuple(trip[k][[utils.LAT, utils.LON]]),
-            tuple(trip[k+1][[utils.LAT, utils.LON]])
-            )
-      cost_to_carry_gift = distance * gift[utils.WEIGHT]
-
-      previous_location = tuple(trip[i-1][[utils.LAT, utils.LON]]) if i > -0 else utils.NORTH_POLE
-      location_of_current = tuple(row[[utils.LAT, utils.LON]])
-      cum_weight = np.sum(trip[i:][:, utils.WEIGHT]) + utils.SLEIGH_WEIGHT + gift[utils.WEIGHT]
-      cost_to_move_here = self.get_cost_of_tour_of_three(
-          previous_location, tuple(gift[[utils.LAT, utils.LON]]), location_of_current,
-          cum_weight, gift[utils.WEIGHT])
-
-      cost_for_old_path = utils.distance(location_of_current, previous_location) * (cum_weight - gift[utils.WEIGHT])
-
-      cost_to_insert_here = cost_to_carry_gift + cost_to_move_here - cost_for_old_path
-
-      if cost_to_insert_here < minimum_cost:
-        minimum_cost = cost_to_insert_here
-        best_index = i
-
-    return best_index, minimum_cost
-
-  def _cost_to_remove_gift(self, trip, index_to_be_removed):
-    gift_to_remove = trip[index_to_be_removed]
-    i = index_to_be_removed
-
-    # we need to consider the distance from NP to the first gift - unless we're evaluating the first gift
-    distance = 0 if i == 0 else utils.distance(utils.NORTH_POLE, tuple(trip[0][[utils.LAT, utils.LON]]))
-    # add distances up until the one before the current
-    for k in range(i-1):
-      distance += utils.distance(
-          tuple(trip[k][[utils.LAT, utils.LON]]),
-          tuple(trip[k+1][[utils.LAT, utils.LON]])
-          )
-    cost_to_not_carry_gift = distance * -gift_to_remove[utils.WEIGHT]
-
-    previous_location = tuple(trip[i-1][[utils.LAT, utils.LON]]) if i > -0 else utils.NORTH_POLE
-    next_location = tuple(trip[i+1][[utils.LAT, utils.LON]]) if i < len(trip)-1 else utils.NORTH_POLE
-    location_of_current = tuple(gift_to_remove[[utils.LAT, utils.LON]])
-    cum_weight = np.sum(trip[i:][:, utils.WEIGHT]) + utils.SLEIGH_WEIGHT # + gift_to_remove[utils.WEIGHT]
-    cost_of_old_tour = self.get_cost_of_tour_of_three(
-        previous_location, location_of_current, next_location,
-        cum_weight, gift_to_remove[utils.WEIGHT])
-
-    cost_for_new_path = utils.distance(previous_location, next_location) * (cum_weight - gift_to_remove[utils.WEIGHT])
-
-    total_cost = cost_to_not_carry_gift - cost_of_old_tour + cost_for_new_path
-
-    return total_cost
 
 
   @property
