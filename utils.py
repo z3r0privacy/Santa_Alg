@@ -23,6 +23,12 @@ LON = 3
 WEIGHT = 4
 
 def memoize(func):
+  """Uses a dict to cache the results of the decorated function.
+
+  :func: Function to decorate
+
+  :returns: Decorated function
+  """
   cache = {}
   @wraps(func)
   def wrap(*args):
@@ -35,6 +41,14 @@ def memoize(func):
     return cache[args]
   return wrap
 
+def get_location(gift):
+  """Extracts the location of a gift as a tuple.
+
+  :gift: Numpy array row of the gift
+
+  :returns: Tuple with location
+  """
+  return tuple(gift[[LAT, LON]])
 
 def get_logger(name):
   debug_levelv_num = 21
@@ -71,12 +85,32 @@ def log_success_or_error(log, success, message):
   log_method = log.success if success else log.error
   log_method(message)
 
-@memoize
 def distance(a, b):
+  """Use cache to avoid computing unnecessary haversine distances.
+  Also avoid computing symmetric distances ((a,b) and (b,a)).
+
+  :a: First location
+  :b: Second location
+
+  :returns: Haversine distance between the locations
+  """
+  return _actually_get_distance(a, b) if a < b else _actually_get_distance(b, a)
+
+@memoize
+def _actually_get_distance(a, b):
   return haversine(a, b)
 
 def weighted_trip_length(stops, weights):
+  """Calculates the cost of the trip.
+
+  :stops: Pandas DataFrame with the locations of the trip
+  :weights: Pandas Series with the weights of the gifts
+
+  :returns: The cost of the trip
+  """
   tuples = [tuple(x) for x in stops.values]
+  weights = [w for w in weights.values]
+
   # adding the last trip back to north pole, with just the sleigh weight
   tuples.append(NORTH_POLE)
   weights.append(SLEIGH_WEIGHT)
@@ -92,21 +126,30 @@ def weighted_trip_length(stops, weights):
   return dist
 
 def verify_weights(all_trips):
-  uniq_trips = all_trips.TripId.unique()
+  """Verifies that none of the trips exceeds the weight limit.
 
-  if all(all_trips.groupby("TripId").Weight.sum() < WEIGHT_LIMIT):
-    return True
-  else :
-    for i,trip in enumerate(all_trips.groupby("TripId")):
-      if trip.Weight.sum() > WEIGHT_LIMIT:
-        self.log.warning("Weight too high: {}".format(trip.Weight.sum()))
+  :all_trips: Pandas DataFrame with the trips to verify
+
+  :returns: True if all trips are valid
+  """
+  has_invalid_trip = False
+  for trip in all_trips.groupby("TripId"):
+    this_trip = trip[1]
+    if this_trip.Weight.sum() > WEIGHT_LIMIT:
+      self.log.warning("Weight too high: {}".format(this_trip.Weight.sum()))
+      has_invalid_trip = True
+  return not has_invalid_trip
 
 def weighted_reindeer_weariness(all_trips):
-  uniq_trips = all_trips.TripId.unique()
+  """Calculates the total cost of all the trips.
 
-  dist = 0.0
-  for t in uniq_trips:
-    this_trip = all_trips[all_trips.TripId==t]
-    dist = dist + weighted_trip_length(this_trip[["Latitude","Longitude"]], this_trip.Weight.tolist())
+  :all_trips: Pandas DataFrame with all trips
 
-  return dist
+  :returns: Total cost of the trips
+  """
+  cost = 0.0
+  for trip in all_trips.groupby("TripId"):
+    this_trip = trip[1]
+    cost += weighted_trip_length(this_trip[["Latitude","Longitude"]], this_trip.Weight)
+  return cost
+

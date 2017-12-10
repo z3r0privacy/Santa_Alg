@@ -45,20 +45,27 @@ class SimulatedAnnealingMethod(Method):
     accepted_bad_solutions = 0
     rejected_bad_solutions = 0
     last_good_solutions = 0
-    last_bad_solutions = 0
+    last_accepted_bad_solutions = 0
+    last_rejected_bad_solutions = 0
     last_cost_change = 0
     total_cost_change = 0
     log_interval = 1000
     for i in range(iterations):
       if i % log_interval == 0:
-        self.log.debug("{}: Temperature {:.1f}, last solutions were {:.1f}%/{:.1f}% good/bad, cost change: {:.1f}k".format(
-          i, temperature,
+        self.log.debug("{:>5}/{}: T={:>9.1f}, since {:>5}: {:>4.1f}/{:>4.1f}/{:>4.1f}% good/acc/rej, cost: {:>9.1f}k".format(
+          i, iterations, temperature, i - log_interval,
           100.0 * (good_solutions - last_good_solutions) / log_interval,
-          100.0 * (accepted_bad_solutions + rejected_bad_solutions - last_bad_solutions) / log_interval,
+          100.0 * (accepted_bad_solutions - last_accepted_bad_solutions) / log_interval,
+          100.0 * (rejected_bad_solutions - last_rejected_bad_solutions) / log_interval,
           (total_cost_change - last_cost_change) / 1e3))
         last_cost_change = total_cost_change
         last_good_solutions = good_solutions
-        last_bad_solutions = accepted_bad_solutions + rejected_bad_solutions
+        last_acceptedbad_solutions = accepted_bad_solutions
+        last_rejectedbad_solutions = rejected_bad_solutions
+
+      # decrease temperature after every x solutions
+      if i > 0 and i % 1e2 == 0:
+        temperature *= alpha
 
       # select neighbor - try all neighbors to find any good (or the least bad) neighbor
       neighbors = self._get_neighbors(trips)
@@ -77,23 +84,22 @@ class SimulatedAnnealingMethod(Method):
         total_cost_change += neighbor.cost_delta
         neighbor.apply()
         good_solutions += 1
-
-        # decrease temperature after every x good solutions
-        if good_solutions % 1e4:
-          temperature *= alpha
         continue
 
-      if np.exp(-best_bad_neighbor.cost_delta/temperature) > np.random.rand():
-        # self.log.info("Accepting worse neighbor {} (by {})".format(best_bad_neighbor, best_bad_neighbor.cost_delta))
+      accepting_probability = np.exp(-best_bad_neighbor.cost_delta/temperature)
+      if accepting_probability > np.random.rand():
+        # self.log.info("Accepting worse neighbor {:>20} (by {:>9.1f}, {:>4.1f}% chance, T={:>9.1f})".format(
+        #   str(best_bad_neighbor), best_bad_neighbor.cost_delta, 100 * accepting_probability, temperature))
         total_cost_change += best_bad_neighbor.cost_delta
         best_bad_neighbor.apply()
         accepted_bad_solutions += 1
       else:
-        # self.log.debug("Rejecting worse neighbor {} (by {})".format(best_bad_neighbor, best_bad_neighbor.cost_delta))
+        # self.log.debug("Rejecting worse neighbor {:>20} (by {:>9.1f}, {:>4.1f}% chance, T={:>9.1f})".format(
+        #   str(best_bad_neighbor), best_bad_neighbor.cost_delta, 100 * accepting_probability, temperature))
         rejected_bad_solutions += 1
 
       # increase temperature after every x bad solutions
-      if (accepted_bad_solutions + rejected_bad_solutions) % 5000:
+      if (accepted_bad_solutions + rejected_bad_solutions) % 5000 == 0:
         temperature = (3*temperature + initial_temperature)/4
 
     self.log.info("Finished {} iterations with total cost change {}".format(iterations, total_cost_change))

@@ -66,7 +66,7 @@ class Method(abc.ABC):
     self.log.info("Sleigh utilization: min {:.2f}, max {:.2f}, avg {:.2f}, std {:.2f}".format(
       weights.min(), weights.max(), weights.mean(), weights.std()))
 
-    costs = np.asarray([utils.weighted_trip_length(trip[["Latitude","Longitude"]], trip.Weight.tolist()) for trip in trips])
+    costs = np.asarray([utils.weighted_trip_length(trip[["Latitude","Longitude"]], trip.Weight) for trip in trips])
     self.log.info("Trip costs: min {:.2f}M, max {:.2f}M, avg {:.2f}M, std {:.2f}k".format(
       costs.min() / 1e6, costs.max() / 1e6, costs.mean() / 1e6, costs.std() / 1e3))
 
