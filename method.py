@@ -11,7 +11,7 @@ import utils
 
 class Method(abc.ABC):
   def __init__(self, gifts, log):
-    self.current_best = 101.49405 * 1e9
+    self.current_best = 29.34056 * 1e9
     self.gifts = gifts
     self.log = log
     self.trips = pd.DataFrame(columns=["GiftId", "TripId"])
