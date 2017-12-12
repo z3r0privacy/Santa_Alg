@@ -105,7 +105,9 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
       old = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
 
     new_trip = trip[self.index_to_split:]
-    new_trip[:, utils.TRIP] = len(self.trips) + 1
+    existing_trips = [t[0, utils.TRIP] for t in self.trips]
+    new_trip_id = np.max(existing_trips) + 1
+    new_trip[:, utils.TRIP] = new_trip_id
     self.trips[self.trip_to_split] = trip[:self.index_to_split]
     self.trips.append(new_trip)
 

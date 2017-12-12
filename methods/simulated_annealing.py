@@ -36,10 +36,12 @@ class SimulatedAnnealingMethod(Method):
     all_trips = self._load_trips_from_file(args)
     if all_trips is None:
       return
-    iterations = int(1e5)
+    iterations = int(1e4)
     initial_temperature = 1e6
     alpha = 0.9
     moves = {}
+
+    # TODO: Checkpoints
 
     temperature = initial_temperature
 
@@ -54,9 +56,9 @@ class SimulatedAnnealingMethod(Method):
     last_rejected_bad_solutions = 0
     last_cost_change = 0
     total_cost_change = 0
-    log_interval = 1e2
+    log_interval = int(1e3)
     for i in range(iterations):
-      if i % log_interval == 0:
+      if i > 0 and i % log_interval == 0:
         self.log.debug("{:>6}/{}: T={:>9.1f}, since {:>6}: {:>4.1f}/{:>4.1f}/{:>4.1f}% good/acc/rej, cost: {:>9.1f}k".format(
           i, iterations, temperature, i - log_interval,
           100.0 * (good_solutions - last_good_solutions) / log_interval,
@@ -74,13 +76,16 @@ class SimulatedAnnealingMethod(Method):
 
       # select neighbor - try all neighbors to find any good (or the least bad) neighbor
       neighbors = self._get_neighbors(trips)
-      best_bad_neighbor = neighbors[0]
-      for j in range(1+0*len(neighbors)):
-        neighbor = neighbors[j]
-        if neighbor.cost_delta < 0:
-          break
-        if best_bad_neighbor.cost_delta > neighbor.cost_delta:
-          best_bad_neighbor = neighbor
+      neighbor = best_bad_neighbor = neighbors[0]
+
+      # print(neighbor.cost_delta, neighbor)
+
+      # for j in range(1+0*len(neighbors)):
+      #   neighbor = neighbors[j]
+      #   if neighbor.cost_delta < 0:
+      #     break
+      #   if best_bad_neighbor.cost_delta > neighbor.cost_delta:
+      #     best_bad_neighbor = neighbor
 
       if neighbor.cost_delta < 0:
         # self.log.success("Accepting neighbor {} with negative cost {}".format(neighbor, neighbor.cost_delta))
@@ -90,6 +95,7 @@ class SimulatedAnnealingMethod(Method):
         if not neighbor.__class__.__name__ in moves.keys():
           moves[neighbor.__class__.__name__] = 0
         moves[neighbor.__class__.__name__] += 1
+        self.check_gifts(trips, neighbor)
         continue
 
       accepting_probability = np.exp(-best_bad_neighbor.cost_delta/temperature)
@@ -102,6 +108,7 @@ class SimulatedAnnealingMethod(Method):
         if not neighbor.__class__.__name__ in moves.keys():
           moves[neighbor.__class__.__name__] = 0
         moves[neighbor.__class__.__name__] += 1
+        self.check_gifts(trips, neighbor)
       else:
         # self.log.debug("Rejecting worse neighbor {:>20} (by {:>9.1f}, {:>4.1f}% chance, T={:>9.1f})".format(
         #   str(best_bad_neighbor), best_bad_neighbor.cost_delta, 100 * accepting_probability, temperature))
@@ -119,4 +126,29 @@ class SimulatedAnnealingMethod(Method):
     # extract gift/trip mapping
     combined_trips = np.concatenate(trips)[:, [0, 1]]
     self.trips = pd.DataFrame(combined_trips, columns=["GiftId", "TripId"])
+
+  def check_gifts(self, trips, neighbor, print_weights=False):
+    if not Neighbor.VERIFY_COST_DELTA:
+      return
+
+    for trip in trips:
+      if len(set(trip[:, utils.TRIP])) != 1:
+        self.log.error("Trip has gifts with unexpected number of trip IDs: {} (previous move: {})".format(set(trip[:, utils.TRIP]), str(neighbor)))
+        print(trip[:, utils.TRIP])
+        raise ValueError()
+
+    weights = [np.sum(t[:, utils.WEIGHT]) for t in trips]
+    if print_weights:
+      print("weights", np.max(weights))
+    if np.max(weights) > utils.WEIGHT_LIMIT:
+      self.log.error("Trip with invalid weight: {} (previous move: {})".format(np.max(weights), str(neighbor)))
+      raise ValueError()
+
+    gifts = [t[:, utils.GIFT] for t in trips]
+    flattened = [val for sublist in gifts for val in sublist]
+    gifts = np.unique(flattened)
+    if len(gifts) != 100000:
+      self.log.error("Wrong number of gifts: {} (previous move: {})".format(len(gifts), str(neighbor)))
+      raise ValueError()
+
 

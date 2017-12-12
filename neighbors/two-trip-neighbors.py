@@ -61,7 +61,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
           utils.weighted_trip_length(destination[:, utils.LOCATION], destination[:, utils.WEIGHT])
 
     gift = source[self.gift_to_move]
-    gift[utils.TRIP] = self.destination_trip+1
+    gift[utils.TRIP] = destination[0, utils.TRIP]
 
     destination = np.insert(destination, self.destination_insertion_index, gift, axis=0)
     self.trips[self.destination_trip] = destination
@@ -100,19 +100,14 @@ class MoveGiftToLightestTripNeighbor(MoveGiftToAnotherTripNeighbor):
 
 class SwapGiftsAcrossTripsNeighbor(Neighbor):
   def __init__(self, trips, log):
-    # when trips/gifts to swap aren't specified, select them randomly
     self.trips = trips
     self.first_trip = np.random.randint(len(trips))
     while len(self.trips[self.first_trip]) < 3:
       self.first_trip = np.random.randint(len(trips))
-    self.second_trip = np.random.randint(len(trips))
-    while len(self.trips[self.second_trip]) < 3 or self.first_trip == self.second_trip:
-      self.second_trip = np.random.randint(len(trips))
-    self.first_gift = np.random.randint(len(self.trips[self.first_trip]))
-    self.second_gift = self._get_valid_swappee()
-    while self.second_gift is None:
-      self.first_gift = np.random.randint(len(self.trips[self.first_trip]))
-      self.second_gift = self._get_valid_swappee()
+
+    self.second_trip = None
+    self.first_gift = None
+    self.second_gift = None
     self.first_trip_insertion_index = None
     self.second_trip_insertion_index = None
     super(SwapGiftsAcrossTripsNeighbor, self).__init__(log)
@@ -120,7 +115,7 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
   def __str__(self):
     return "swap-{}:{}-{}:{}".format(self.first_trip, self.first_gift, self.second_trip, self.second_gift)
 
-  def _get_valid_swappee(self):
+  def _get_valid_swapee(self):
     weight_of_first_gift = self.trips[self.first_trip][self.first_gift][utils.WEIGHT]
     first_weight = np.sum(self.trips[self.first_trip][:, utils.WEIGHT])
     second_weight = np.sum(self.trips[self.second_trip][:, utils.WEIGHT])
@@ -130,11 +125,22 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
       if (first_weight - weight_of_first_gift + weight_of_second_gift <= utils.WEIGHT_LIMIT and
           second_weight + weight_of_first_gift - weight_of_second_gift <= utils.WEIGHT_LIMIT):
         return gift
-
+    return None
 
   @property
   @memoize
   def cost_delta(self):
+    # find second trip to exchange gifts with and valid gifts to swap
+    first_gifts_to_try = np.random.permutation(len(self.trips[self.first_trip]))
+    for fg in first_gifts_to_try:
+      self.second_trip = np.random.randint(len(self.trips))
+      while len(self.trips[self.second_trip]) < 3 or self.first_trip == self.second_trip:
+        self.second_trip = np.random.randint(len(self.trips))
+      self.first_gift = fg
+      self.second_gift = self._get_valid_swapee()
+      if self.second_gift is not None:
+        break
+
     # find insertion indexes with minimum cost
     self.first_trip_insertion_index, cost_to_insert_first = self._find_best_insertion_index(
         self.trips[self.first_trip], self.trips[self.second_trip][self.second_gift], self.first_gift)
@@ -167,9 +173,10 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
 
     # extract insertees now (before they're removed) and update their trip assignment
     first_gift_row = first_trip[self.first_gift]
-    first_gift_row[utils.TRIP] = self.second_trip+1
+    trip_id_for_second_gift = first_trip[0, utils.TRIP]
+    first_gift_row[utils.TRIP] = second_trip[0, utils.TRIP]
     second_gift_row = second_trip[self.second_gift]
-    second_gift_row[utils.TRIP] = self.first_trip+1
+    second_gift_row[utils.TRIP] = trip_id_for_second_gift
 
     # update first trip
     first_trip = np.insert(first_trip, self.first_trip_insertion_index, second_gift_row, axis=0)

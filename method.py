@@ -35,6 +35,9 @@ class Method(abc.ABC):
     if not matches:
       self.log.warning("No matching file found, aborting!")
       return
+    if len(matches) > 1:
+      self.log.warning("More than one matching file found, aborting! ({})".format(matches))
+      return
     self.log.info("Using file {} from {} matching files ({})".format(matches[0], len(matches), matches))
     return pd.read_csv(matches[0]).merge(self.gifts, on="GiftId")
 

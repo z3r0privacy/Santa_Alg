@@ -24,6 +24,7 @@ def main(method, solution_file, args):
     else:
       method.write_trips("last-failure.csv")
   except Exception as ex:
+    method.write_trips("last-failure.csv")
     log.critical("{} during evaluation: {}".format(type(ex).__name__, str(ex)))
     log.critical(traceback.format_exc())
     sys.exit(1)
@@ -44,7 +45,7 @@ if __name__ == "__main__":
   start_time = time.time()
 
   np.random.seed(42)
-  log = utils.get_logger("numerai")
+  log = utils.get_logger("santa-sleigh")
   gifts = pd.read_csv("data/gifts.csv")
 
   methods = {method.name: method for method in get_all_methods(gifts, log)}
