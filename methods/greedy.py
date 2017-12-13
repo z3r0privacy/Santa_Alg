@@ -162,7 +162,8 @@ class HeavyAntarcticaGreedyMethod(Method):
         best_index, _ = Neighbor.find_best_insertion_index(np.asarray(this_trip), gift.values,
             lat_index=1, lon_index=2, weight_index=3)
         this_trip.insert(best_index, gift)
-      all_trips.append(this_trip)
+      if this_trip:
+        all_trips.append(this_trip)
 
     # extract gift/trip mapping
     combined_trips = np.concatenate(all_trips)[:, [utils.GIFT, utils.TRIP]]
@@ -178,8 +179,8 @@ class HeavyAntarcticaGreedyMethod(Method):
       for t in sorted_trip:
         t[utils.TRIP] = len(all_trips)
         this_trip.append(t)
-      all_trips.append(this_trip)
-    self.trips = self.get_sorted_trips(trips)
+      if this_trip:
+        all_trips.append(this_trip)
 
     # extract gift/trip mapping
     combined_trips = np.concatenate(all_trips)[:, [utils.GIFT, utils.TRIP]]
@@ -285,5 +286,5 @@ class BalancedAntarcticaGreedyMethod(Method):
       with open(trips_file, "wb") as fh:
         pickle.dump(trips, fh)
 
-    self.trips = HeavyAntarcticaGreedyMethod.get_geographically_sorted_trips(self, trips) # naughty!
+    self.trips = HeavyAntarcticaGreedyMethod.get_optimally_sorted_trips(self, trips) # naughty!
 
