@@ -27,9 +27,13 @@ class SimulatedAnnealingMethod(Method):
     # return [OptimalMoveGiftInTripNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
 
     # optimum neighbors
+    # TODO: Try different weights
     return [
         OptimalSwapInRandomTripNeighbor(trips, self.log),
         OptimalMoveGiftInTripNeighbor(trips, self.log)
+        # move gift to other trip
+        # merge current trip into neighbors
+        # split own trip into left and right parts
         ]
 
     # careful with subclasses of subclasses...

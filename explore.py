@@ -45,6 +45,6 @@ def plot_trip(solution_file, t=123):
   trip = pd.concat([pd.DataFrame([{"GiftId": 0, "Latitude": utils.NORTH_POLE[0], "Longitude": utils.NORTH_POLE[1], "TripId": t, "Weight": 0}]), trip])
   plt.scatter(trip.Longitude, trip.Latitude, c=trip.Weight,  alpha=0.8, s=10, linewidths=4)
   plt.plot(trip.Longitude, trip.Latitude, 'k.-', alpha=0.3)
-  plt.title("Trip " + str(t))
+  plt.title("Trip {} ({})".format(t, solution_file))
   prepare_and_show_trip_plot()
 

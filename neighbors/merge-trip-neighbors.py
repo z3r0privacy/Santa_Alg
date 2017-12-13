@@ -8,6 +8,8 @@ from neighbor import Neighbor
 from utils import memoize
 
 
+# TODO: Try merging current trip entirely into its "adjacent" trips
+
 class MergeTripIntoOthersNeighbor(Neighbor):
   def __init__(self, trips, log):
     self.trips = trips

@@ -8,6 +8,8 @@ from neighbor import Neighbor
 from utils import memoize
 
 
+# TODO: Split own trip into left-part trip and right-part trip
+
 class SplitOneTripIntoTwoNeighbor(Neighbor):
   def __init__(self, trips, log):
     # when trip to split isn't specified, select one randomly
