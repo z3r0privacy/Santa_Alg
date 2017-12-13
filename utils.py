@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 import logging
-from functools import wraps
+from functools import lru_cache, wraps
 
 import numpy as np
+import pandas as pd
 
 import coloredlogs
-import pandas as pd
 from haversine import haversine
 
 NORTH_POLE = (90, 0)
@@ -100,9 +100,12 @@ def distance(a, b):
   bb = tuple(b)
   return _actually_get_distance(aa, bb) if aa < bb else _actually_get_distance(bb, aa)
 
-@memoize
+@lru_cache(maxsize=32*32*1024*2) # should be around 2GB
 def _actually_get_distance(a, b):
   return haversine(a, b)
+
+def get_cache_info():
+  return _actually_get_distance.cache_info()
 
 def weighted_trip_length(stops, weights):
   """Calculates the cost of the trip.
@@ -115,8 +118,7 @@ def weighted_trip_length(stops, weights):
   tuples = [tuple(x) for x in (stops.values if isinstance(stops, pd.DataFrame) else stops)]
   weights = (weights.values if isinstance(weights, pd.Series) else weights).tolist()
   if len(tuples) != len(weights):
-      raise ValueError("Stops/weights dimension mismatch!")
-  # print("length of trip", len(tuples))
+    raise ValueError("Stops/weights dimension mismatch!")
 
   # adding the last trip back to north pole, with just the sleigh weight
   tuples.append(NORTH_POLE)
