@@ -13,9 +13,6 @@ NORTH_POLE = (90, 0)
 WEIGHT_LIMIT = 1000.0
 SLEIGH_WEIGHT = 10.0
 
-CACHE_HIT = 0
-CACHE_MISS = 0
-
 GIFT = 0
 TRIP = 1
 LAT = 2
@@ -34,12 +31,8 @@ def memoize(func):
   cache = {}
   @wraps(func)
   def wrap(*args):
-    global CACHE_HIT, CACHE_MISS
     if args not in cache:
       cache[args] = func(*args)
-      CACHE_MISS += 1
-    else:
-      CACHE_HIT += 1
     return cache[args]
   return wrap
 
@@ -133,7 +126,6 @@ def weighted_trip_length(stops, weights):
     dist += distance(location, prev_stop)
     prev_stop = location
     prev_weight = prev_weight - weight
-  # print("DISTANCE\t", dist)
   return cost
 
 def verify_weights(all_trips, log):

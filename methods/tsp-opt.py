@@ -81,26 +81,37 @@ class ThoroughTspOptimizeTripMethod(Method):
       if i % 100 == 0:
         self.log.info("Optimizing trip {}...".format(i))
 
-      # try to improve until swapping half the gifts failed to improve the solution
       swaps = 0
-      total_improvement = 0
+      improvement = 0
       no_improvement_count = 0
-      abort_after_x_without_improvement = len(trip) / 2
-      # try gifts in random order
-      indexes = np.random.permutation(range(len(trip)))
-      for index in indexes:
-        neighbor = OptimalSwapInRandomTripNeighbor(trips, self.log, trip=trip, first_gift=index)
-        if neighbor.cost_delta < 0:
-          total_improvement += neighbor.cost_delta
-          swaps += 1
-          neighbor.apply()
-        else:
-          no_improvement_count += 1
-          if no_improvement_count > abort_after_x_without_improvement: # TODO: try considering successful swap count
-            break
+      abort_after_x_without_improvement = int(len(trip) * 0.5)
+      min_tries = 10
+      tries = 0
+      # try at least min_tries times and as long as there's some "considerable" improvement
+      while current_improvement < -1e3 or min_tries > tries:
+        current_improvement = 0
+        current_swaps = 0
+        current_no_improvement_count = 0
+        tries += 1
 
-      self.log.debug("Checked {:>3d} and swapped {:>2d} locations with a total improvement of {:.3}M".format(
-        swaps + no_improvement_count, swaps, total_improvement / 1e6))
+        # try to improve in random order until swapping half the gifts failed to improve the solution
+        indexes = np.random.permutation(range(len(trip)))
+        for index in indexes:
+          neighbor = OptimalSwapInRandomTripNeighbor(trips, self.log, trip=trip, first_gift=index)
+          if neighbor.cost_delta < 0:
+            improvement += neighbor.cost_delta
+            current_improvement += neighbor.cost_delta
+            swaps += 1
+            current_swaps += 1
+            neighbor.apply()
+          else:
+            no_improvement_count += 1
+            current_no_improvement_count += 1
+            if current_no_improvement_count - current_swaps > abort_after_x_without_improvement:
+              break
+
+      self.log.debug("Checked {:>3d} in {} tries for {:>3d}-gift trip: swapped {:>2d} gifts with an improvement of {:.3}M".format(
+        swaps + no_improvement_count, tries, len(trip), swaps, improvement / 1e6))
 
       # done processing the trip, write back the permutated trip
       trips[i] = trip

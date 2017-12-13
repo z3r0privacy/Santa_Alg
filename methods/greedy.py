@@ -147,6 +147,7 @@ class HeavyAntarcticaGreedyMethod(Method):
     return trips
 
   def get_optimally_sorted_trips(self, trips):
+    self.log.warning("THIS DOESN'T WORK")
     self.log.info("Putting trips into optimal order")
     total_trip_count = len(trips)
     all_trips = []
@@ -286,5 +287,5 @@ class BalancedAntarcticaGreedyMethod(Method):
       with open(trips_file, "wb") as fh:
         pickle.dump(trips, fh)
 
-    self.trips = HeavyAntarcticaGreedyMethod.get_optimally_sorted_trips(self, trips) # naughty!
+    self.trips = HeavyAntarcticaGreedyMethod.get_geographically_sorted_trips(self, trips) # naughty!
 

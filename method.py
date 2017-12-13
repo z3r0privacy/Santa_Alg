@@ -85,8 +85,8 @@ class Method(abc.ABC):
       stops.min(), stops.max(), stops.mean(), stops.std()))
 
     cache_info = utils.get_cache_info()
-    self.log.info("Retrieved distances: {}, cache info: {} ({:.2f}%))".format(
-      utils.CACHE_HIT + utils.CACHE_MISS, cache_info, 100.0 * cache_info.hits / (cache_info.hits + cache_info.misses)))
+    self.log.info("Distance cache info: {} ({:.2f}% hits))".format(
+      cache_info, 100.0 * cache_info.hits / (cache_info.hits + cache_info.misses)))
 
   def write_trips(self, file_name):
     """Creates a submission file from the calculated trips

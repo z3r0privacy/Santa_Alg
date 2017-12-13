@@ -45,7 +45,6 @@ def get_all_methods(gifts, log):
 if __name__ == "__main__":
   start_time = time.time()
 
-  np.random.seed(42)
   log = utils.get_logger("santa-sleigh")
   gifts = pd.read_csv("data/gifts.csv")
 
