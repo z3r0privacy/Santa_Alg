@@ -19,7 +19,8 @@ def main(method, solution_file, args):
   try:
     log.info("Optimizing trips...")
     method.run(args)
-    if method.evaluate_trips():
+    if method.verify_trips():
+      method.evaluate_trips()
       method.write_trips(solution_file)
     else:
       method.write_trips("last-failure.csv")
@@ -60,7 +61,9 @@ if __name__ == "__main__":
       "Pattern to match files under 'data/' against which contains a solution to load as basis for the new evaluation")
 
   args = parser.parse_args()
-  solution_file = "solutions/{}-{}.csv".format(args.method, datetime.utcnow().strftime("%Y-%m-%d-%H:%M:%S"))
+  evaluation_id = "{}-{}".format(args.method, datetime.utcnow().strftime("%Y-%m-%d-%H:%M:%S"))
+  args.evaluation_id = evaluation_id
+  solution_file = "solutions/{}.csv".format(evaluation_id)
   log.debug("method: '{}', args: '{}'".format(args.method, args))
 
   main(methods[args.method], solution_file, args)

@@ -18,7 +18,7 @@ freeze: venv
 
 install: venv
 	$(BIN)/pip install -r requirements.txt
-	mkdir -p {old-,}solutions/
+	mkdir -p solutions/ old-solutions/ checkpoints/ old-checkpoints/
 
 explore:
 	$(BIN)/ipython -m explore -i
@@ -29,6 +29,8 @@ uninstall:
 archive:
 	mv solutions/*.csv old-solutions/
 	for sol in old-solutions/*.csv; do gzip $$sol; done
+	mv checkpoints/*.csv old-checkpoints/
+	for chk in old-checkpoints/*.csv; do gzip $$chk; done
 
 clean:
 	find . -type f -name '*.pyc' -exec rm -f {} +

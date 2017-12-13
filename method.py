@@ -41,7 +41,7 @@ class Method(abc.ABC):
     self.log.info("Using file {} from {} matching files ({})".format(matches[0], len(matches), matches))
     return pd.read_csv(matches[0]).merge(self.gifts, on="GiftId")
 
-  def evaluate_trips(self):
+  def verify_trips(self):
     """Verifies that the constraints aren't violated and checks solution quality.
 
     :returns: True if the trips are valid
@@ -60,6 +60,13 @@ class Method(abc.ABC):
     if not utils.verify_weights(merged, self.log):
       self.log.error("One or more trip is invalid!")
       return False
+
+    return True
+
+  def evaluate_trips(self):
+    unique_trips = self.trips.TripId.unique()
+    merged = self.trips.merge(self.gifts, on="GiftId")
+    trips = [merged[merged.TripId == t] for t in unique_trips]
 
     score = utils.weighted_reindeer_weariness(merged)
     utils.log_success_or_error(self.log, score < self.current_best, "Cost of the {} trips: {:.5f}B ({:.5f}B)".format(
@@ -81,14 +88,12 @@ class Method(abc.ABC):
       utils.CACHE_HIT + utils.CACHE_MISS, utils.CACHE_HIT, utils.CACHE_MISS,
       100.0 * utils.CACHE_HIT / (utils.CACHE_HIT + utils.CACHE_MISS)))
 
-    return True
-
   def write_trips(self, file_name):
     """Creates a submission file from the calculated trips
 
     :file_name: Name of the file to write
 
     """
-    self.log.info("Writing trips to {}".format(file_name))
+    self.log.debug("Writing trips to {}".format(file_name))
     self.trips[["GiftId", "TripId"]].astype(int).to_csv(file_name, index=False)
 
