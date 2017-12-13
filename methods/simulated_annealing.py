@@ -8,8 +8,11 @@ from method import Method
 from neighbor import Neighbor
 from neighbors import (MoveGiftToAnotherTripNeighbor,
                        MoveGiftToLightestTripNeighbor,
+                       OptimalMoveGiftInTripNeighbor,
+                       OptimalSwapInRandomTripNeighbor,
                        SplitOneTripIntoTwoNeighbor,
-                       SwapGiftsAcrossTripsNeighbor, SwapGiftsInTripNeighbor)
+                       SwapGiftsAcrossTripsNeighbor,
+                       SwapRandomGiftsInTripNeighbor)
 
 
 class SimulatedAnnealingMethod(Method):
@@ -20,9 +23,16 @@ class SimulatedAnnealingMethod(Method):
   def _get_neighbors(self, trips):
     number_of_same_neighbor = 1
 
-    # return [MoveGiftToAnotherTripNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
-    # return [MoveGiftToLightestTripNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
+    # current neighbor to test
+    # return [OptimalMoveGiftInTripNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
 
+    # optimum neighbors
+    return [
+        OptimalSwapInRandomTripNeighbor(trips, self.log),
+        OptimalMoveGiftInTripNeighbor(trips, self.log)
+        ]
+
+    # careful with subclasses of subclasses...
     return np.random.permutation(np.array(
       [[neighbor(trips, self.log) for i in range(number_of_same_neighbor)]
         for neighbor in Neighbor.__subclasses__()]
@@ -169,5 +179,4 @@ class SimulatedAnnealingMethod(Method):
     self.write_trips(checkpoint_file)
 
     return self.verify_trips()
-
 

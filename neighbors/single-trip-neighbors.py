@@ -119,7 +119,7 @@ class OptimalSwapInRandomTripNeighbor(SwapRandomGiftsInTripNeighbor):
     super(OptimalSwapInRandomTripNeighbor, self).__init__(trips, log)
 
   def __str__(self):
-    return "{}-optimal-swap-{}-{}".format(int(self.trip[0][1]), self.first_gift, self.second_gift)
+    return "{}-optimal-swap-{}-{}: {:.5f}M".format(int(self.trip[0][1]), self.first_gift, self.second_gift, self.cost_delta / 1e6)
 
   @property
   @memoize
@@ -137,4 +137,55 @@ class OptimalSwapInRandomTripNeighbor(SwapRandomGiftsInTripNeighbor):
         self.second_gift = i
 
     return minimum_cost
+
+
+class OptimalMoveGiftInTripNeighbor(Neighbor):
+  def __init__(self, trips, log, trip=None):
+    self.trips = trips
+    if trip is None:
+      # select random trip with at least 4 gifts
+      self.trip = np.random.randint(len(trips))
+      while len(self.trips[self.trip]) < 4:
+        self.trip = np.random.randint(len(trips))
+    else:
+      self.trip = trip
+
+    self.gift_index = np.random.randint(len(self.trips[self.trip]))
+    self.new_index = None
+    super(OptimalMoveGiftInTripNeighbor, self).__init__(log)
+
+  def __str__(self):
+    return "{}-optimal-move-{}-{}: {:.5f}M".format(int(self.trips[self.trip][0][1]), self.gift_index, self.new_index, self.cost_delta / 1e6)
+
+  @property
+  @memoize
+  def cost_delta(self):
+    trip = self.trips[self.trip]
+    gift = trip[self.gift_index]
+    cost_to_remove = self._cost_to_remove_gift(trip, self.gift_index)
+
+    trip_without_gift = np.delete(trip, self.gift_index, axis=0)
+    self.new_index, cost_to_insert = Neighbor.find_best_insertion_index(trip_without_gift, gift, index_to_be_removed=self.gift_index+1)
+
+    return cost_to_insert + cost_to_remove
+
+  def apply(self):
+    # self.log.debug("Applying {}".format(self, self.cost_delta))
+
+    trip = self.trips[self.trip]
+
+    if self.VERIFY_COST_DELTA:
+      old = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
+
+    gift = trip[self.gift_index]
+
+    trip = np.delete(trip, self.gift_index, axis=0)
+    index_to_insert = self.new_index if self.new_index < self.gift_index else self.new_index + 0
+    trip = np.insert(trip, index_to_insert, gift, axis=0)
+
+    self.trips[self.trip] = trip
+
+    if self.VERIFY_COST_DELTA:
+      new = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
+      utils.verify_costs_are_equal(self.cost_delta, new-old)
 
