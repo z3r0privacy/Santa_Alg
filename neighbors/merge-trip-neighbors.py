@@ -79,7 +79,7 @@ class MergeTripIntoOthersNeighbor(Neighbor):
     cost_of_insertions = 0
 
     for trip_index, gift in self.trip_assignments_for_gifts.items():
-      index_in_trip, cost = self._find_best_insertion_index(self.trips[trip_index], gift)
+      index_in_trip, cost = Neighbor.find_best_insertion_index(self.trips[trip_index], gift)
       self.gift_insertions.append((gift, trip_index, index_in_trip))
       cost_of_insertions += cost
 

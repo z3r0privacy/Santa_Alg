@@ -21,54 +21,6 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
   def __str__(self):
     return "split-{}-at-{}".format(self.trip_to_split, self.index_to_split)
 
-  """
-  def _get_cost_of_adding_gift_at_end(gift, cum_distance, previous_location):
-    pass
-
-  def _get_cost_of_removing_gift_in_beginning(gift, remaining_distance):
-    pass
-
-  def _find_best_split_index(self, trip):
-    cost_of_old_trip = utils.weighted_trip_length(pd.DataFrame(trip)[utils.LOCATION], pd.DataFrame(trip)[utils.WEIGHT])
-
-    # initialize by splitting before gift 2 (to get one 1-gift and one n-1-gift trip)
-    best_index = 1
-    previous_location = utils.get_location(trip[0])
-    first_trip_distance = utils.distance(utils.NORTH_POLE, previous_location)
-    second_trip_distance = utils.distance(utils.NORTH_POLE, utils.get_location(trip[len(trip)-1]))
-    for k in range(best_index, len(trip)-1):
-      second_trip_distance += utils.distance(utils.get_location(trip[k]), utils.get_location(trip[k+1]))
-    # print(first_trip_distance, second_trip_distance)
-    print("\t\t",first_trip_distance + second_trip_distance + utils.distance(previous_location, utils.get_location(trip[best_index])))
-
-    cost_trip_1 = first_trip_distance * (trip[0][utils.WEIGHT] + 2 * utils.SLEIGH_WEIGHT) # carry the sleigh there and back
-    cost_trip_2 = utils.weighted_trip_length(trip[best_index:, utils.LOCATION], trip[best_index:, utils.WEIGHT])
-    minimum_cost = cost_trip_1 + cost_trip_2 - cost_of_old_trip
-
-    print("prev", previous_location)
-    for i in range(2, len(trip)):
-      print("i", i)
-      current_gift = trip[i]
-      next_location = utils.get_location(trip[i+1]) if i < len(trip)-1 else utils.NORTH_POLE
-
-      # we now "move" gift i from the second to the first trip
-      print("gift", current_gift)
-      old_previous_location = previous_location
-      previous_location = utils.get_location(trip[i-1])
-      first_trip_distance += utils.distance(old_previous_location, previous_location)
-      second_trip_distance -= utils.distance(previous_location, current_gift[utils.LOCATION])
-
-      print("prev", previous_location)
-      print("next", next_location)
-
-      print("\t\t",first_trip_distance + second_trip_distance + utils.distance(previous_location, utils.get_location(current_gift)))
-
-      cost_of_adding = self._get_cost_of_adding_gift_at_end(current_gift, first_trip_distance, previous_location)
-      cost_of_removing = self._get_cost_of_removing_gift_in_beginning(current_gift, next_location, second_trip_distance)
-      if i == 5:
-        raise ValueError("NOT IMPLEMENTED")
-    """
-
   def _find_best_split_index(self, trip):
     minimum_cost = np.finfo(np.float64).max
     best_index = None

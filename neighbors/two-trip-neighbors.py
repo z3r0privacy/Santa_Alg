@@ -41,7 +41,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
     source = self.trips[self.source_trip]
     gift = source[self.gift_to_move]
 
-    self.destination_insertion_index, cost_to_insert = self._find_best_insertion_index(
+    self.destination_insertion_index, cost_to_insert = Neighbor.find_best_insertion_index(
         self.trips[self.destination_trip], gift)
 
     cost_to_remove = self._cost_to_remove_gift(source, self.gift_to_move)
@@ -142,10 +142,10 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
         break
 
     # find insertion indexes with minimum cost
-    self.first_trip_insertion_index, cost_to_insert_first = self._find_best_insertion_index(
-        self.trips[self.first_trip], self.trips[self.second_trip][self.second_gift], self.first_gift)
-    self.second_trip_insertion_index, cost_to_insert_second = self._find_best_insertion_index(
-        self.trips[self.second_trip], self.trips[self.first_trip][self.first_gift], self.second_gift)
+    self.first_trip_insertion_index, cost_to_insert_first = Neighbor.find_best_insertion_index(
+        self.trips[self.first_trip], self.trips[self.second_trip][self.second_gift], index_to_be_removed=self.first_gift)
+    self.second_trip_insertion_index, cost_to_insert_second = Neighbor.find_best_insertion_index(
+        self.trips[self.second_trip], self.trips[self.first_trip][self.first_gift], index_to_be_removed=self.second_gift)
 
     # update temporary trips with new insertion to accurately calculate the cost of deletion
     temporary_first_trip = self.trips[self.first_trip]

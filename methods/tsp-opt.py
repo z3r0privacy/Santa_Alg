@@ -83,12 +83,14 @@ class ThoroughTspOptimizeTripMethod(Method):
 
       swaps = 0
       improvement = 0
+      current_improvement = 0
       no_improvement_count = 0
       abort_after_x_without_improvement = int(len(trip) * 0.5)
       min_tries = 10
+      min_improvement = -1e3
       tries = 0
       # try at least min_tries times and as long as there's some "considerable" improvement
-      while current_improvement < -1e3 or min_tries > tries:
+      while current_improvement < min_improvement or min_tries > tries:
         current_improvement = 0
         current_swaps = 0
         current_no_improvement_count = 0
