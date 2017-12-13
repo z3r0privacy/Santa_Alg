@@ -75,7 +75,7 @@ class SimulatedAnnealingMethod(Method):
         last_rejected_bad_solutions = rejected_bad_solutions
 
       if i > 0 and i % checkpoint_interval == 0:
-        if not self.create_checkpoint(trips, i, iterations, args.evaluation_id):
+        if not self.create_checkpoint(trips, i, iterations, args.evaluation_id, args.random_seed):
           self.log.error("Aborting evaluation because the current solution is invalid")
           break
 
@@ -159,8 +159,8 @@ class SimulatedAnnealingMethod(Method):
       self.log.error("Wrong number of gifts: {} (previous move: {})".format(len(gifts), str(neighbor)))
       raise ValueError()
 
-  def create_checkpoint(self, trips, i, iterations, evaluation_id):
-    checkpoint_file = "checkpoints/{}-{}.csv".format(evaluation_id, i)
+  def create_checkpoint(self, trips, i, iterations, evaluation_id, random_seed):
+    checkpoint_file = "checkpoints/{}_{}_{}.csv".format(evaluation_id, random_seed, i)
     self.log.info("{:>6}/{}: Creating checkpoint '{}'".format(i, iterations, checkpoint_file))
 
     # extract gift/trip mapping

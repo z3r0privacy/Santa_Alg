@@ -3,12 +3,13 @@ BIN=$(VENV)/bin
 NICE=nice -n 19
 
 MET=sim
+RND=42
 
 run:
-	$(NICE) $(BIN)/python run.py $(MET) $(ARGS)
+	$(NICE) $(BIN)/python run.py $(MET) --random-seed=$(RND)
 
 run-file:
-	$(NICE) $(BIN)/python run.py $(MET) --from-file=$(FILE)
+	$(NICE) $(BIN)/python run.py $(MET) --random-seed=$(RND) --from-file=$(FILE)
 
 venv:
 	virtualenv -p python3 $(VENV)

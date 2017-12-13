@@ -55,6 +55,7 @@ if __name__ == "__main__":
 
   # general arguments
   parser.add_argument("method", choices=methods.keys(), help="method to try")
+  parser.add_argument("--random-seed", required=False, type=int, nargs="?", const=42, help="Random seed")
 
   # method-specific arguments
   parser.add_argument("--from-file", required=False, help=
@@ -63,7 +64,9 @@ if __name__ == "__main__":
   args = parser.parse_args()
   evaluation_id = "{}-{}".format(args.method, datetime.utcnow().strftime("%Y-%m-%d-%H:%M:%S"))
   args.evaluation_id = evaluation_id
-  solution_file = "solutions/{}.csv".format(evaluation_id)
+  solution_file = "solutions/{}_{}.csv".format(evaluation_id, args.random_seed)
   log.debug("method: '{}', args: '{}'".format(args.method, args))
+
+  np.random.seed(args.random_seed)
 
   main(methods[args.method], solution_file, args)
