@@ -11,18 +11,11 @@ from utils import memoize
 class MoveGiftToAnotherTripNeighbor(Neighbor):
   def __init__(self, trips, log):
     self.trips = trips
-
-    if hasattr(self, "source_trip"):
-      if len(self.trips[self.source_trip]) < 2:
-        raise ValueError("Invalid trip")
-    else:
-      self.source_trip = np.random.randint(len(trips))
-      while len(self.trips[self.source_trip]) < 2:
-        self.source_trip = np.random.randint(len(trips))
-
-    self.gift_to_move = self.gift_to_move if hasattr(self, "gift_to_move") else np.random.randint(len(self.trips[self.source_trip]))
-    self.destination_trip = self.destination_trip if hasattr(self, "destination_trip") else self._get_valid_target_trip()
+    self.source_trip = None
+    self.gift_to_move = None
+    self.destination_trip = None
     self.destination_insertion_index = None
+    self.cost_to_insert_in_destination = None
     super(MoveGiftToAnotherTripNeighbor, self).__init__(log)
 
   def _get_valid_target_trip(self):
@@ -32,13 +25,29 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
         return i
 
   def __str__(self):
-    return "move-{}:{}-to-{}:{}".format(self.source_trip, self.gift_to_move,
-        self.destination_trip, self.destination_insertion_index)
+    return "move-{}:{}-to-{}:{}: {:.5f}M".format(self.source_trip, self.gift_to_move,
+        self.destination_trip, self.destination_insertion_index, self.cost_delta / 1e6)
 
   @property
   @memoize
   def cost_delta(self):
+    if hasattr(self, "source_trip") and self.source_trip is not None:
+      if len(self.trips[self.source_trip]) < 2:
+        raise ValueError("Invalid trip")
+    else:
+      self.source_trip = np.random.randint(len(self.trips))
+      while len(self.trips[self.source_trip]) < 2:
+        self.source_trip = np.random.randint(len(self.trips))
+
     source = self.trips[self.source_trip]
+
+    if self.gift_to_move is not None or self.destination_trip is not None or self.destination_insertion_index is not None or self.cost_to_insert_in_destination is not None:
+      # we should have *all* of these set
+      return self._cost_to_remove_gift(source, self.gift_to_move)
+
+    self.gift_to_move = np.random.randint(len(self.trips[self.source_trip]))
+    self.destination_trip = self._get_valid_target_trip()
+
     gift = source[self.gift_to_move]
 
     self.destination_insertion_index, cost_to_insert = Neighbor.find_best_insertion_index(
@@ -46,9 +55,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
 
     cost_to_remove = self._cost_to_remove_gift(source, self.gift_to_move)
 
-    total_cost = cost_to_insert + cost_to_remove
-
-    return total_cost
+    return cost_to_insert + cost_to_remove
 
   def apply(self):
     # self.log.debug("Applying {}".format(self))
