@@ -11,8 +11,10 @@ from utils import memoize
 class MoveGiftToAnotherTripNeighbor(Neighbor):
   def __init__(self, trips, log):
     self.trips = trips
-    self.source_trip = None
-    self.gift_to_move = None
+    if not hasattr(self, "source_trip"):
+      self.source_trip = None
+    if not hasattr(self, "gift_to_move"):
+      self.gift_to_move = None
     self.destination_trip = None
     self.destination_insertion_index = None
     self.cost_to_insert_in_destination = None
@@ -31,7 +33,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
   @property
   @memoize
   def cost_delta(self):
-    if hasattr(self, "source_trip") and self.source_trip is not None:
+    if self.source_trip is not None:
       if len(self.trips[self.source_trip]) < 2:
         raise ValueError("Invalid trip")
     else:
@@ -43,7 +45,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
 
     if self.gift_to_move is not None or self.destination_trip is not None or self.destination_insertion_index is not None or self.cost_to_insert_in_destination is not None:
       # we should have *all* of these set
-      return self._cost_to_remove_gift(source, self.gift_to_move)
+      return self.cost_to_insert_in_destination + self._cost_to_remove_gift(source, self.gift_to_move)
 
     self.gift_to_move = np.random.randint(len(self.trips[self.source_trip]))
     self.destination_trip = self._get_valid_target_trip()
@@ -103,6 +105,69 @@ class MoveGiftToLightestTripNeighbor(MoveGiftToAnotherTripNeighbor):
     # can be invalid!
     weights = [np.sum(trip[:, utils.WEIGHT]) for trip in trips]
     return weights.index(np.min(weights))
+
+
+class MoveGiftToOptimalTripNeighbor(MoveGiftToAnotherTripNeighbor):
+  def __init__(self, trips, log):
+    self.source_trip = np.random.randint(len(trips))
+    while len(trips[self.source_trip]) < 2:
+      self.source_trip = np.random.randint(len(trips))
+    self.gift_to_move = np.random.randint(len(trips[self.source_trip]))
+    super(MoveGiftToOptimalTripNeighbor, self).__init__(trips, log)
+
+  def __str__(self):
+    return "move-{}:{}-to-optimal-{}:{}".format(self.source_trip, self.gift_to_move,
+        self.destination_trip, self.destination_insertion_index)
+
+  def find_close_trips(self, gift, trip_index_to_skip):
+    gift_longitude = gift[utils.LON]
+    gift_weight = gift[utils.WEIGHT]
+    tolerance = 1
+    while True:
+      candidates = []
+      close_candidates = []
+      for i, trip in enumerate(self.trips):
+        if i == trip_index_to_skip or trip[:, utils.WEIGHT].sum() + gift_weight > utils.WEIGHT_LIMIT:
+          # avoid full candidates and moving to same trip
+          continue
+        min_lon = trip[:, utils.LON].min()
+        max_lon = trip[:, utils.LON].max()
+        if gift_longitude > min_lon and gift_longitude < max_lon:
+          candidates.append(i)
+        elif gift_longitude > min_lon - tolerance and gift_longitude < max_lon + tolerance:
+          close_candidates.append(i)
+      if candidates:
+        return candidates
+      if close_candidates:
+        return close_candidates
+      tolerance += 1
+
+  @property
+  @memoize
+  def cost_delta(self):
+    gift = self.trips[self.source_trip][self.gift_to_move]
+
+    # find candidates for optimal destination trip
+    # trips are good candidates if inserting the gift doesn't add a (big) detour
+    candidate_trips = self.find_close_trips(gift, self.source_trip)
+
+    best_candidate = None
+    best_index_in_candidate = None
+    minimum_cost = np.finfo(np.float64).max
+
+    # try inserting into each
+    for candidate in candidate_trips:
+      destination_index, cost = self.find_best_insertion_index(self.trips[candidate], gift)
+      if cost < minimum_cost:
+        minimum_cost = cost
+        best_candidate = candidate
+        best_index_in_candidate = destination_index
+
+    self.destination_trip = best_candidate
+    self.destination_insertion_index = best_index_in_candidate
+    self.cost_to_insert_in_destination = minimum_cost
+
+    return super(MoveGiftToOptimalTripNeighbor, self).cost_delta
 
 
 class SwapGiftsAcrossTripsNeighbor(Neighbor):
