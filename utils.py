@@ -93,7 +93,7 @@ def distance(a, b):
   bb = tuple(b)
   return _actually_get_distance(aa, bb) if aa < bb else _actually_get_distance(bb, aa)
 
-@lru_cache(maxsize=32*32*1024*2) # should be around 2GB
+@lru_cache(maxsize=32*32*1024*2*2) # should be around 2GB
 def _actually_get_distance(a, b):
   return haversine(a, b)
 

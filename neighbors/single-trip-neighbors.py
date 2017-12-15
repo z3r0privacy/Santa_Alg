@@ -140,7 +140,7 @@ class OptimalSwapInRandomTripNeighbor(SwapRandomGiftsInTripNeighbor):
 
 
 class OptimalMoveGiftInTripNeighbor(Neighbor):
-  def __init__(self, trips, log, trip=None):
+  def __init__(self, trips, log, trip=None, gift_index=None):
     self.trips = trips
     if trip is None:
       # select random trip with at least 4 gifts
@@ -150,7 +150,7 @@ class OptimalMoveGiftInTripNeighbor(Neighbor):
     else:
       self.trip = trip
 
-    self.gift_index = np.random.randint(len(self.trips[self.trip]))
+    self.gift_index = gift_index if gift_index is not None else np.random.randint(len(self.trips[self.trip]))
     self.new_index = None
     super(OptimalMoveGiftInTripNeighbor, self).__init__(log)
 

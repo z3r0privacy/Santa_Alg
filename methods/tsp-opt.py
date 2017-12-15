@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 import numpy as np
-
 import pandas as pd
 import utils
 from method import Method
-from neighbors import OptimalSwapInRandomTripNeighbor
+from neighbors import (OptimalMoveGiftInTripNeighbor,
+                       OptimalSwapInRandomTripNeighbor)
 
 
 class RandomTspOptimizeTripMethod(Method):
@@ -85,9 +85,9 @@ class ThoroughTspOptimizeTripMethod(Method):
       improvement = 0
       current_improvement = 0
       no_improvement_count = 0
-      abort_after_x_without_improvement = int(len(trip) * 0.5)
+      abort_after_x_without_improvement = int(len(trip) * 0.9)
       min_tries = 10
-      min_improvement = -1e3
+      min_improvement = -1e2
       tries = 0
       # try at least min_tries times and as long as there's some "considerable" improvement
       while current_improvement < min_improvement or min_tries > tries:
@@ -99,7 +99,8 @@ class ThoroughTspOptimizeTripMethod(Method):
         # try to improve in random order until swapping half the gifts failed to improve the solution
         indexes = np.random.permutation(range(len(trip)))
         for index in indexes:
-          neighbor = OptimalSwapInRandomTripNeighbor(trips, self.log, trip=trip, first_gift=index)
+          neighbor = OptimalMoveGiftInTripNeighbor(trips, self.log, trip=i, gift_index=index)
+          # neighbor = OptimalSwapInRandomTripNeighbor(trips, self.log, trip=trip, first_gift=index)
           if neighbor.cost_delta < 0:
             improvement += neighbor.cost_delta
             current_improvement += neighbor.cost_delta
