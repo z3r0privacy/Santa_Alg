@@ -11,7 +11,10 @@ import utils
 
 class Method(abc.ABC):
   def __init__(self, gifts, log):
-    self.current_best = 29.34056 * 1e9
+    self.current_best = 29.34056 * 1e9 # heavy antarctica with north->south ordering
+    self.current_best = 22.26235 * 1e9 # balanced antarctica with north->south ordering
+    self.current_best = 19.63026 * 1e9 # single-trip optimized heavy antarctica with north->south ordering
+    self.current_best = 16.87566 * 1e9 # single-trip optimized balanced antarctica with north->south ordering
     self.gifts = gifts
     self.log = log
     self.trips = pd.DataFrame(columns=["GiftId", "TripId"])
