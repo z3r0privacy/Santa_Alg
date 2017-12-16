@@ -39,7 +39,7 @@ class SimulatedAnnealingMethod(Method):
         # MERGE-TRIP NEIGHBORHOOD
         # 1000 iterations:
         # merge current trip into neighbors
-        OptimalMergeTripIntoAdjacentNeighbor(trips),
+        # OptimalMergeTripIntoAdjacentNeighbor(trips),
 
         # TWO-TRIP NEIGHBORHOOD
         # 1000 iterations: 6m11s
@@ -64,6 +64,14 @@ class SimulatedAnnealingMethod(Method):
         OptimalMoveGiftInTripNeighbor(trips),
         ]
 
+  def _get_slow_neighbors(self, trips):
+    return [
+        # MERGE-TRIP NEIGHBORHOOD
+        # 1000 iterations:
+        # merge current trip into neighbors
+        OptimalMergeTripIntoAdjacentNeighbor(trips),
+        ]
+
   def run(self, args):
     """
     Idea: Apply simulated annealing (d'uh).
@@ -77,6 +85,7 @@ class SimulatedAnnealingMethod(Method):
     checkpoint_interval = int(1e3)
     worker_size = 2
     log_neighbors = False
+    treat_slow_jobs_differntly = True
 
     # hyperparameters
     initial_temperature = args.temperature or 1e5
@@ -132,11 +141,20 @@ class SimulatedAnnealingMethod(Method):
 
         # select neighbor
         neighbors = self._get_neighbors(trips)
+        slow_neighbors = self._get_slow_neighbors(trips)
+        if not treat_slow_jobs_differntly:
+          neighbors = slow_neighbors + neighbors
+          slow_neighbors.clear()
         jobs = []
         for neighbor in neighbors:
           jobs.append(pool.apply_async(neighbor.cost_delta))
         costs = [j.get() for j in jobs]
         neighbor = neighbors[costs.index(min(costs))]
+        while neighbor.cost_delta() >= 0 and len(slow_neighbors) > 0:
+          slow_neighbor = slow_neighbors[-1]
+          slow_neighbors.remove(slow_neighbor)
+          if slow_neighbor.cost_delta() < neighbor.cost_delta():
+            neighbor = slow_neighbor
         neighbor_name = neighbor.__class__.__name__
 
         if neighbor.cost_delta() < 0:

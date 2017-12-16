@@ -121,7 +121,7 @@ class OptimalSwapInRandomTripNeighbor(SwapRandomGiftsInTripNeighbor):
     super(OptimalSwapInRandomTripNeighbor, self).__init__(trips)
 
   def __str__(self):
-    return "{}-optimal-swap-{}-{}: {:.5f}M".format(int(self.trip[0][1]), self.first_gift, self.second_gift, self.cost_delta / 1e6)
+    return "{}-optimal-swap-{}-{}: {:.5f}M".format(int(self.trip[0][1]), self.first_gift, self.second_gift, self.cost_delta() / 1e6)
 
   def cost_delta(self):
     if self.cost is not None:
