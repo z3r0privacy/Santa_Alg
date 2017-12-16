@@ -41,7 +41,13 @@ class SimulatedAnnealingMethod(Method):
         # SINGLE-TRIP NEIGHBORHOOD
         # 1000 iterations: 1m44s
         OptimalSwapInRandomTripNeighbor(trips, self.log),
-        # 1000 iterations: 1m51s
+        # 1000 iterations single-threaded: 1m51s
+        # 1000 iterations on four threads: 2m6s
+        # 1000 iterations on two threads:  2m10s
+        # 1000 iterations on two threads with length > 50:  1m49s
+        # 1000 iterations on two threads with length > 100: 1m43s
+        # 1000 iterations on two threads with length > 200: 1m45s
+        # 1000 iterations on two threads with length > 500: 1m44s
         OptimalMoveGiftInTripNeighbor(trips, self.log),
 
         # NEW-TRIP NEIGHBORHOOD
