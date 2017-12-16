@@ -4,12 +4,13 @@ NICE=nice -n 19
 
 MET=sim
 RND=42
+ARGS=
 
 run:
-	$(NICE) $(BIN)/python run.py $(MET) --random-seed=$(RND)
+	$(NICE) $(BIN)/python run.py $(MET) --random-seed=$(RND) $(ARGS)
 
 run-file:
-	$(NICE) $(BIN)/python run.py $(MET) --random-seed=$(RND) --from-file=$(FILE)
+	$(NICE) $(BIN)/python run.py $(MET) --random-seed=$(RND) --from-file=$(FILE) $(ARGS)
 
 venv:
 	virtualenv -p python3 $(VENV)

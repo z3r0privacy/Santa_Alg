@@ -69,15 +69,15 @@ class SimulatedAnnealingMethod(Method):
     if all_trips is None:
       return
 
-    iterations = int(1e3)
-    log_interval = int(1e2)
+    iterations = int(1e5)
+    log_interval = int(1e3)
     checkpoint_interval = int(1e3)
     log_neighbors = False
 
     # hyperparameters
-    initial_temperature = 1e5
+    initial_temperature = args.temperature or 1e5
     temperature_decrease = iterations / 1e1
-    alpha = 0.9
+    alpha = args.alpha or 0.8
 
     moves = {}
     temperature = initial_temperature

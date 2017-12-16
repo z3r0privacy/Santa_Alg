@@ -59,6 +59,10 @@ if __name__ == "__main__":
   # method-specific arguments
   parser.add_argument("--from-file", required=False, help=
       "Pattern to match files under 'data/' against which contains a solution to load as basis for the new evaluation")
+  parser.add_argument("--alpha", required=False, type=int,
+      help="Factor for temperature decrease in SA")
+  parser.add_argument("--temperature", required=False, type=int,
+      help="Initial temperature to use for SA")
 
   args = parser.parse_args()
   evaluation_id = "{}-{}".format(args.method, datetime.utcnow().strftime("%Y-%m-%d-%H:%M:%S"))

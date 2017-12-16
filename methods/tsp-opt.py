@@ -80,7 +80,7 @@ class ThoroughTspOptimizeTripMethod(Method):
     for i, trip in enumerate(trips):
       if i % 100 == 0 and i != 0:
         checkpoint_file = "checkpoints/{}_{}_{}.csv".format(args.evaluation_id, args.random_seed, i)
-        self.log.info("{:>6}/{}: Creating checkpoint '{}'".format(i, iterations, checkpoint_file))
+        self.log.info("{:>6}/{}: Creating checkpoint '{}'".format(i, len(trips), checkpoint_file))
         combined_trips = np.concatenate(trips)[:, [0, 1]]
         self.trips = pd.DataFrame(combined_trips, columns=["GiftId", "TripId"])
         self.write_trips(checkpoint_file)
