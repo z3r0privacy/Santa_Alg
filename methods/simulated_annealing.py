@@ -8,7 +8,10 @@ from method import Method
 from neighbor import Neighbor
 from neighbors import (MoveGiftToAnotherTripNeighbor,
                        MoveGiftToLightestTripNeighbor,
+                       MoveGiftToOptimalTripNeighbor,
                        OptimalMoveGiftInTripNeighbor,
+                       OptimalHorizontalTripSplitNeighbor,
+                       OptimalVerticalTripSplitNeighbor,
                        OptimalSwapInRandomTripNeighbor,
                        SplitOneTripIntoTwoNeighbor,
                        SwapGiftsAcrossTripsNeighbor,
@@ -24,16 +27,18 @@ class SimulatedAnnealingMethod(Method):
     number_of_same_neighbor = 1
 
     # current neighbor to test
-    # return [OptimalMoveGiftInTripNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
+    return [OptimalVerticalTripSplitNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
 
     # optimum neighbors
-    # TODO: Try different weights
+    # TODO: Try different weights per neighbor and different weights for trips within neighbors (based on cost/weight)
     return [
+        # TODO: Specify more restrictive heuristic restrictions
+        MoveGiftToOptimalTripNeighbor(trips, self.log),
         OptimalSwapInRandomTripNeighbor(trips, self.log),
-        OptimalMoveGiftInTripNeighbor(trips, self.log)
-        # move gift to other trip
+        OptimalMoveGiftInTripNeighbor(trips, self.log),
+        OptimalHorizontalTripSplitNeighbor(trips, self.log),
+        OptimalVerticalTripSplitNeighbor(trips, self.log),
         # merge current trip into neighbors
-        # split own trip into left and right parts
         ]
 
     # careful with subclasses of subclasses...

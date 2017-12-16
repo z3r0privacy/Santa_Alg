@@ -9,6 +9,9 @@ import utils
 
 gifts = pd.read_csv("data/gifts.csv")
 
+plt.ion()
+plt.axis("equal")
+
 def plot_weights():
   sns.distplot(gifts.Weight)
   plt.show()

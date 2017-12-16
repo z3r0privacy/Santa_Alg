@@ -164,7 +164,7 @@ def verify_costs_are_equal(a, b):
   :b: Second cost
   """
   if round(a, 1) != round(b, 1):
-    print(a)
-    print(b)
+    print(a / 1e6, "M")
+    print(b / 1e6, "M")
     raise ValueError("Cost mismatch!")
 
