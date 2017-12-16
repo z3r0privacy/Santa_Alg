@@ -15,6 +15,8 @@ class Method(abc.ABC):
     self.current_best = 22.26235 * 1e9 # balanced antarctica with north->south ordering
     self.current_best = 19.63026 * 1e9 # single-trip optimized heavy antarctica with north->south ordering
     self.current_best = 16.87566 * 1e9 # single-trip optimized balanced antarctica with north->south ordering
+    self.current_score = None
+    self.current_trip_count = None
     self.gifts = gifts
     self.log = log
     self.trips = pd.DataFrame(columns=["GiftId", "TripId"])
@@ -42,7 +44,10 @@ class Method(abc.ABC):
       self.log.warning("More than one matching file found, aborting! ({})".format(matches))
       return
     self.log.info("Using file {} from {} matching files ({})".format(matches[0], len(matches), matches))
-    return pd.read_csv(matches[0]).merge(self.gifts, on="GiftId")
+    data = pd.read_csv(matches[0]).merge(self.gifts, on="GiftId")
+    self.current_score = utils.weighted_reindeer_weariness(data)
+    self.current_trip_count = len(data.TripId.unique())
+    return data
 
   def verify_trips(self):
     """Verifies that the constraints aren't violated and checks solution quality.
@@ -72,8 +77,10 @@ class Method(abc.ABC):
     trips = [merged[merged.TripId == t] for t in unique_trips]
 
     score = utils.weighted_reindeer_weariness(merged)
-    utils.log_success_or_error(self.log, score < self.current_best, "Cost of the {} trips: {:.5f}B ({:.5f}B)".format(
-      unique_trips.shape[0], score / 1e9, (score - self.current_best) / 1e9))
+    utils.log_success_or_error(self.log, score < self.current_score, "Cost of the {} trips: {:.5f}B ({:.5f}B with {} trips)".format(
+      unique_trips.shape[0], score / 1e9, (score - self.current_score) / 1e9, self.current_trip_count))
+    utils.log_success_or_error(self.log, score < self.current_best, "Compared to best: {:.5f}B".format(
+      (score - self.current_best) / 1e9))
 
     weights = np.asarray([trip.Weight.sum() for trip in trips])
     self.log.info("Sleigh utilization: min {:.2f}, max {:.2f}, avg {:.2f}, std {:.2f}".format(

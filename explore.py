@@ -10,7 +10,6 @@ import utils
 gifts = pd.read_csv("data/gifts.csv")
 
 plt.ion()
-plt.axis("equal")
 
 def plot_weights():
   sns.distplot(gifts.Weight)
@@ -27,6 +26,7 @@ def prepare_and_show_trip_plot():
   plt.xlabel("Longitude")
   plt.ylim(-90, 90)
   plt.ylabel("Latitude")
+  plt.axis("equal")
   plt.show()
 
 def plot_trips(solution_file):

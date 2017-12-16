@@ -27,17 +27,31 @@ class SimulatedAnnealingMethod(Method):
     number_of_same_neighbor = 1
 
     # current neighbor to test
-    return [OptimalVerticalTripSplitNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
+    # return [OptimalVerticalTripSplitNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
 
     # optimum neighbors
     # TODO: Try different weights per neighbor and different weights for trips within neighbors (based on cost/weight)
     return [
-        # TODO: Specify more restrictive heuristic restrictions
+        # TODO: Specify more restrictive heuristic restrictions in neighbors
+
+        # TWO-TRIP NEIGHBORHOOD
+        # 1000 iterations: 6m11s
         MoveGiftToOptimalTripNeighbor(trips, self.log),
+
+        # SINGLE-TRIP NEIGHBORHOOD
+        # 1000 iterations: 1m44s
         OptimalSwapInRandomTripNeighbor(trips, self.log),
+        # 1000 iterations: 1m51s
         OptimalMoveGiftInTripNeighbor(trips, self.log),
+
+        # NEW-TRIP NEIGHBORHOOD
+        # 1000 iterations: 1m15s
         OptimalHorizontalTripSplitNeighbor(trips, self.log),
+        # 1000 iterations: 1m20s
         OptimalVerticalTripSplitNeighbor(trips, self.log),
+
+        # MERGE-TRIP NEIGHBORHOOD
+        # 1000 iterations:
         # merge current trip into neighbors
         ]
 
@@ -104,45 +118,48 @@ class SimulatedAnnealingMethod(Method):
 
       # select neighbor - try all neighbors to find any good (or the least bad) neighbor
       neighbors = self._get_neighbors(trips)
-      neighbor = best_bad_neighbor = neighbors[0]
-
-      # for j in range(1+0*len(neighbors)):
-      #   neighbor = neighbors[j]
-      #   if neighbor.cost_delta < 0:
-      #     break
-      #   if best_bad_neighbor.cost_delta > neighbor.cost_delta:
-      #     best_bad_neighbor = neighbor
+      neighbor = neighbors[np.random.randint(len(neighbors))]
+      neighbor_name = neighbor.__class__.__name__
 
       if neighbor.cost_delta < 0:
         # self.log.success("Accepting neighbor {} with negative cost {}".format(neighbor, neighbor.cost_delta))
         total_cost_change += neighbor.cost_delta
         neighbor.apply()
         good_solutions += 1
-        if not neighbor.__class__.__name__ in moves.keys():
-          moves[neighbor.__class__.__name__] = 0
-        moves[neighbor.__class__.__name__] += 1
+        if not neighbor_name in moves.keys():
+          moves[neighbor_name] = {}
+        if not "good" in moves[neighbor_name].keys():
+          moves[neighbor_name]["good"] = 0
+        moves[neighbor_name]["good"] += 1
         self.check_gifts(trips, neighbor)
         continue
 
-      accepting_probability = np.exp(-best_bad_neighbor.cost_delta/temperature)
+      accepting_probability = np.exp(-neighbor.cost_delta/temperature)+1
       if accepting_probability > np.random.rand():
         # self.log.info("Accepting worse neighbor {:>20} (by {:>9.1f}, {:>4.1f}% chance, T={:>9.1f})".format(
-        #   str(best_bad_neighbor), best_bad_neighbor.cost_delta, 100 * accepting_probability, temperature))
-        total_cost_change += best_bad_neighbor.cost_delta
-        best_bad_neighbor.apply()
+        #   str(neighbor), neighbor.cost_delta, 100 * accepting_probability, temperature))
+        total_cost_change += neighbor.cost_delta
+        neighbor.apply()
         accepted_bad_solutions += 1
-        if not neighbor.__class__.__name__ in moves.keys():
-          moves[neighbor.__class__.__name__] = 0
-        moves[neighbor.__class__.__name__] += 1
+        if not neighbor_name in moves.keys():
+          moves[neighbor_name] = {}
+        if not "acc" in moves[neighbor_name].keys():
+          moves[neighbor_name]["acc"] = 0
+        moves[neighbor_name]["acc"] += 1
         self.check_gifts(trips, neighbor)
       else:
         # self.log.debug("Rejecting worse neighbor {:>20} (by {:>9.1f}, {:>4.1f}% chance, T={:>9.1f})".format(
-        #   str(best_bad_neighbor), best_bad_neighbor.cost_delta, 100 * accepting_probability, temperature))
+        #   str(neighbor), neighbor.cost_delta, 100 * accepting_probability, temperature))
         rejected_bad_solutions += 1
+        if not neighbor_name in moves.keys():
+          moves[neighbor_name] = {}
+        if not "rej" in moves[neighbor_name].keys():
+          moves[neighbor_name]["rej"] = 0
+        moves[neighbor_name]["rej"] += 1
 
       # increase temperature after every x bad solutions
-      if (accepted_bad_solutions + rejected_bad_solutions) % 5000 == 0:
-        temperature = (3*temperature + initial_temperature)/4
+      # if (accepted_bad_solutions + rejected_bad_solutions) % 5000 == 0:
+      #   temperature = (3*temperature + initial_temperature)/4
 
     self.log.info("Finished {} iterations with total cost change {}".format(iterations, total_cost_change))
     self.log.info("Evaluated neighbors: {} good, {} accepted/{} rejected bad solutions ({:.1f}/{:.1f}/{:.1f}%)".format(
