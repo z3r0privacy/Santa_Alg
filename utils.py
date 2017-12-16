@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import logging
-from functools import lru_cache, wraps
+from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -20,21 +20,6 @@ LON = 3
 WEIGHT = 4
 LOCATION = [LAT, LON]
 
-def memoize(func):
-  """Uses a dict to cache the results of the decorated function.
-
-  :func: Function to decorate
-
-  :returns: Decorated function
-  """
-  # TODO: Use a limited (LRU) cache instead...
-  cache = {}
-  @wraps(func)
-  def wrap(*args):
-    if args not in cache:
-      cache[args] = func(*args)
-    return cache[args]
-  return wrap
 
 def get_location(gift):
   """Extracts the location of a gift as a tuple.
@@ -93,7 +78,7 @@ def distance(a, b):
   bb = tuple(b)
   return _actually_get_distance(aa, bb) if aa < bb else _actually_get_distance(bb, aa)
 
-@lru_cache(maxsize=32*32*1024*2*1) # should be around 1GB
+@lru_cache(maxsize=int(32*32*1024*2*0.0001)) # should be around 0.1GB
 def _actually_get_distance(a, b):
   return haversine(a, b)
 

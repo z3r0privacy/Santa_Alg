@@ -40,8 +40,8 @@ class RandomTspOptimizeTripMethod(Method):
       swaps = 0
       for _ in range(swaps_per_trip):
         neighbor = OptimalSwapInRandomTripNeighbor(trips, self.log, trip=trip)
-        if neighbor.cost_delta < 0:
-          total_improvement += neighbor.cost_delta
+        if neighbor.cost_delta() < 0:
+          total_improvement += neighbor.cost_delta()
           swaps += 1
           neighbor.apply()
 
@@ -105,9 +105,9 @@ class ThoroughTspOptimizeTripMethod(Method):
         for index in indexes:
           neighbor = OptimalMoveGiftInTripNeighbor(trips, self.log, trip=i, gift_index=index)
           # neighbor = OptimalSwapInRandomTripNeighbor(trips, self.log, trip=trip, first_gift=index)
-          if neighbor.cost_delta < 0:
-            improvement += neighbor.cost_delta
-            current_improvement += neighbor.cost_delta
+          if neighbor.cost_delta() < 0:
+            improvement += neighbor.cost_delta()
+            current_improvement += neighbor.cost_delta()
             swaps += 1
             current_swaps += 1
             neighbor.apply()

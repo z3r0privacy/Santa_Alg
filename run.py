@@ -5,14 +5,15 @@ import logging
 import sys
 import time
 import traceback
-
 from datetime import datetime
+
 import numpy as np
 import pandas as pd
 
-from method import Method
 import methods
 import utils
+from method import Method
+from neighbor import Neighbor
 
 
 def main(method, solution_file, args):
@@ -46,6 +47,7 @@ if __name__ == "__main__":
   start_time = time.time()
 
   log = utils.get_logger("santa-sleigh")
+  Neighbor.log = log
   gifts = pd.read_csv("data/gifts.csv")
 
   methods = {method.name: method for method in get_all_methods(gifts, log)}

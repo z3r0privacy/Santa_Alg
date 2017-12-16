@@ -5,16 +5,15 @@ import numpy as np
 import pandas as pd
 import utils
 from neighbor import Neighbor
-from utils import memoize
 
 
 class MergeTripIntoOthersNeighbor(Neighbor):
-  def __init__(self, trips, log):
+  def __init__(self, trips):
     self.trips = trips
     self.trip_to_merge = None
     self.trip_assignments_for_gifts = None
     self.gift_insertions = None
-    super(MergeTripIntoOthersNeighbor, self).__init__(log)
+    super(MergeTripIntoOthersNeighbor, self).__init__()
 
   def __str__(self):
     return "merge-{}-into-others".format(self.trip_to_merge)
@@ -62,12 +61,13 @@ class MergeTripIntoOthersNeighbor(Neighbor):
       if not trip_failed:
         return trip_index, gift_assignment
 
-      self.log.warning("Failed to spread the gifts of a trip with weight {} (median: {})".format(trip_weight, median_weight))
+      Neighbor.log.warning("Failed to spread the gifts of a trip with weight {} (median: {})".format(trip_weight, median_weight))
     return None, None
 
-  @property
-  @memoize
   def cost_delta(self):
+    if self.cost is not None:
+      return self.cost
+
     self.trip_to_merge, self.trip_assignments_for_gifts = self._find_trip_to_merge()
 
     if self.trip_to_merge is None:
@@ -82,12 +82,12 @@ class MergeTripIntoOthersNeighbor(Neighbor):
       self.gift_insertions.append((gift, trip_index, index_in_trip))
       cost_of_insertions += cost
 
-    total_cost = cost_of_insertions - utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
-    return total_cost
+    self.cost = cost_of_insertions - utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
+    return self.cost
 
   def apply(self):
     if self.trip_to_merge is None:
-      self.log.warning("Not applying trip merge because no valid merge was found")
+      Neighbor.log.warning("Not applying trip merge because no valid merge was found")
       return
 
     # self.log.debug("Applying {}".format(self))
@@ -107,7 +107,7 @@ class MergeTripIntoOthersNeighbor(Neighbor):
       new = 0
       for trip_index in self.trip_assignments_for_gifts.keys():
         new += utils.weighted_trip_length(self.trips[trip_index][:, utils.LOCATION], self.trips[trip_index][:, utils.WEIGHT])
-      utils.verify_costs_are_equal(self.cost_delta, new-old)
+      utils.verify_costs_are_equal(self.cost_delta(), new-old)
 
     # only delete the row afterwards to not mess up the indexes for the cost calculation
     del self.trips[self.trip_to_merge]

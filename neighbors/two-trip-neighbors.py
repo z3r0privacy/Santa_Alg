@@ -3,15 +3,14 @@
 import copy
 
 import numpy as np
-
 import pandas as pd
+
 import utils
 from neighbor import Neighbor
-from utils import memoize
 
 
 class MoveGiftToAnotherTripNeighbor(Neighbor):
-  def __init__(self, trips, log):
+  def __init__(self, trips):
     self.trips = trips
     if not hasattr(self, "source_trip"):
       self.source_trip = None
@@ -20,7 +19,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
     self.destination_trip = None
     self.destination_insertion_index = None
     self.cost_to_insert_in_destination = None
-    super(MoveGiftToAnotherTripNeighbor, self).__init__(log)
+    super(MoveGiftToAnotherTripNeighbor, self).__init__()
 
   def _get_valid_target_trip(self):
     weight_of_gift = self.trips[self.source_trip][self.gift_to_move][utils.WEIGHT]
@@ -30,11 +29,12 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
 
   def __str__(self):
     return "move-{}:{}-to-{}:{}: {:.5f}M".format(self.source_trip, self.gift_to_move,
-        self.destination_trip, self.destination_insertion_index, self.cost_delta / 1e6)
+        self.destination_trip, self.destination_insertion_index, self.cost_delta() / 1e6)
 
-  @property
-  @memoize
   def cost_delta(self):
+    if self.cost is not None:
+      return self.cost
+
     if self.source_trip is None:
       self.source_trip = np.random.randint(len(self.trips))
       while len(self.trips[self.source_trip]) < 2:
@@ -56,7 +56,8 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
 
     cost_to_remove = self._cost_to_remove_gift(source, self.gift_to_move)
 
-    return cost_to_insert + cost_to_remove
+    self.cost = cost_to_insert + cost_to_remove
+    return self.cost
 
   def apply(self):
     # self.log.debug("Applying {}".format(self))
@@ -80,11 +81,11 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
     if self.VERIFY_COST_DELTA:
       new = utils.weighted_trip_length(source[:, utils.LOCATION], source[:, utils.WEIGHT]) + \
           utils.weighted_trip_length(destination[:, utils.LOCATION], destination[:, utils.WEIGHT])
-      utils.verify_costs_are_equal(self.cost_delta, new-old)
+      utils.verify_costs_are_equal(self.cost_delta(), new-old)
 
 
 class MoveGiftToLightestTripNeighbor(MoveGiftToAnotherTripNeighbor):
-  def __init__(self, trips, log):
+  def __init__(self, trips):
     self.destination_trip = self._get_lightest_target_trip(trips)
 
     self.source_trip = np.random.randint(len(trips))
@@ -94,7 +95,7 @@ class MoveGiftToLightestTripNeighbor(MoveGiftToAnotherTripNeighbor):
     while self.source_trip == self.destination_trip or  trips[self.destination_trip][:, utils.WEIGHT].sum() + trips[self.source_trip][self.gift_to_move][utils.WEIGHT] > utils.WEIGHT_LIMIT:
       self.source_trip = np.random.randint(len(trips))
       self.gift_to_move = np.random.randint(len(trips[self.source_trip]))
-    super(MoveGiftToLightestTripNeighbor, self).__init__(trips, log)
+    super(MoveGiftToLightestTripNeighbor, self).__init__(trips)
 
   def __str__(self):
     return "move-{}:{}-to-lightest-{}:{}".format(self.source_trip, self.gift_to_move,
@@ -107,7 +108,7 @@ class MoveGiftToLightestTripNeighbor(MoveGiftToAnotherTripNeighbor):
 
 
 class MoveGiftToOptimalTripNeighbor(MoveGiftToAnotherTripNeighbor):
-  def __init__(self, trips, log, source_trip=None, gift_to_move=None):
+  def __init__(self, trips, source_trip=None, gift_to_move=None):
     if source_trip is None:
       self.source_trip = np.random.randint(len(trips))
       while len(trips[self.source_trip]) < 2:
@@ -115,7 +116,7 @@ class MoveGiftToOptimalTripNeighbor(MoveGiftToAnotherTripNeighbor):
     else:
       self.source_trip = source_trip
     self.gift_to_move = np.random.randint(len(trips[self.source_trip])) if gift_to_move is None else gift_to_move
-    super(MoveGiftToOptimalTripNeighbor, self).__init__(trips, log)
+    super(MoveGiftToOptimalTripNeighbor, self).__init__(trips)
 
   def __str__(self):
     return "move-{}:{}-to-optimal-{}:{}".format(self.source_trip, self.gift_to_move,
@@ -144,9 +145,10 @@ class MoveGiftToOptimalTripNeighbor(MoveGiftToAnotherTripNeighbor):
         return close_candidates
       tolerance += 1
 
-  @property
-  @memoize
   def cost_delta(self):
+    if self.cost is not None:
+      return self.cost
+
     gift = self.trips[self.source_trip][self.gift_to_move]
 
     # find candidates for optimal destination trip
@@ -169,11 +171,12 @@ class MoveGiftToOptimalTripNeighbor(MoveGiftToAnotherTripNeighbor):
     self.destination_insertion_index = best_index_in_candidate
     self.cost_to_insert_in_destination = minimum_cost
 
-    return super(MoveGiftToOptimalTripNeighbor, self).cost_delta
+    self.cost = super(MoveGiftToOptimalTripNeighbor, self).cost_delta()
+    return self.cost
 
 
 class SwapGiftsAcrossTripsNeighbor(Neighbor):
-  def __init__(self, trips, log):
+  def __init__(self, trips):
     self.trips = trips
     self.first_trip = np.random.randint(len(trips))
     while len(self.trips[self.first_trip]) < 3:
@@ -184,7 +187,7 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
     self.second_gift = None
     self.first_trip_insertion_index = None
     self.second_trip_insertion_index = None
-    super(SwapGiftsAcrossTripsNeighbor, self).__init__(log)
+    super(SwapGiftsAcrossTripsNeighbor, self).__init__()
 
   def __str__(self):
     return "swap-{}:{}-{}:{}".format(self.first_trip, self.first_gift, self.second_trip, self.second_gift)
@@ -201,9 +204,10 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
         return gift
     return None
 
-  @property
-  @memoize
   def cost_delta(self):
+    if self.cost is not None:
+      return self.cost
+
     # find second trip to exchange gifts with and valid gifts to swap
     first_gifts_to_try = np.random.permutation(len(self.trips[self.first_trip]))
     for fg in first_gifts_to_try:
@@ -231,9 +235,9 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
     cost_to_remove_first = self._cost_to_remove_gift(temporary_first_trip, self.first_gift if self.first_gift < self.first_trip_insertion_index else self.first_gift + 1)
     cost_to_remove_second = self._cost_to_remove_gift(temporary_second_trip, self.second_gift if self.second_gift < self.second_trip_insertion_index else self.second_gift + 1)
 
-    total_cost = cost_to_insert_first + cost_to_insert_second + cost_to_remove_first + cost_to_remove_second
+    self.cost = cost_to_insert_first + cost_to_insert_second + cost_to_remove_first + cost_to_remove_second
 
-    return total_cost
+    return self.cost
 
   def apply(self):
     # self.log.debug("Applying {}".format(self))
@@ -269,16 +273,16 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
     if self.VERIFY_COST_DELTA:
       new = utils.weighted_trip_length(first_trip[:, utils.LOCATION], first_trip[:, utils.WEIGHT]) + \
           utils.weighted_trip_length(second_trip[:, utils.LOCATION], second_trip[:, utils.WEIGHT])
-      utils.verify_costs_are_equal(self.cost_delta, new-old)
+      utils.verify_costs_are_equal(self.cost_delta(), new-old)
 
 
 class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
-  def __init__(self, trips, log):
+  def __init__(self, trips):
     self.trips = trips
     self.trip_to_merge = None
     self.trips_with_applied_merge = None
     self.modified_trips = None
-    super(OptimalMergeTripIntoAdjacentNeighbor, self).__init__(log)
+    super(OptimalMergeTripIntoAdjacentNeighbor, self).__init__()
 
   def __str__(self):
     return "merge-{}-optimally".format(self.trip_to_merge)
@@ -298,9 +302,10 @@ class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
       if trip_weight < maximum_weight and len(trip) < maximum_trip_length:
         return trip_index
 
-  @property
-  @memoize
   def cost_delta(self):
+    if self.cost is not None:
+      return self.cost
+
     self.trip_to_merge = self._find_trip_to_merge()
     if self.trip_to_merge is None:
       return 0
@@ -313,7 +318,7 @@ class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
 
     # move gifts by size to optimal other trips
     self.trips_with_applied_merge = copy.deepcopy(self.trips)
-    total_cost = 0
+    self.cost = 0
     self.modified_trips = []
     for gift in sorted_gifts:
       # find the index of the current gift in the current trip that is being merged
@@ -323,19 +328,18 @@ class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
           gift_index = i
           break
       # move gift
-      neighbor = MoveGiftToOptimalTripNeighbor(self.trips_with_applied_merge, self.log,
-          self.trip_to_merge, gift_index)
-      total_cost += neighbor.cost_delta
+      neighbor = MoveGiftToOptimalTripNeighbor(self.trips_with_applied_merge, self.trip_to_merge, gift_index)
+      self.cost += neighbor.cost_delta()
       neighbor.apply()
       if not neighbor.destination_trip in self.modified_trips:
         self.modified_trips.append(neighbor.destination_trip)
 
-    return total_cost
+    return self.cost
 
 
   def apply(self):
     if self.trip_to_merge is None:
-      self.log.warning("Not applying trip merge because no valid merge was found")
+      Neighbor.log.warning("Not applying trip merge because no valid merge was found")
       return
 
     # self.log.debug("Applying {}".format(self))
@@ -354,7 +358,7 @@ class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
       new = 0
       for trip_index in self.modified_trips:
         new += utils.weighted_trip_length(self.trips[trip_index][:, utils.LOCATION], self.trips[trip_index][:, utils.WEIGHT])
-      utils.verify_costs_are_equal(self.cost_delta, new-old)
+      utils.verify_costs_are_equal(self.cost_delta(), new-old)
 
     # only delete the row afterwards to not mess up the indexes for the cost calculation
     del self.trips[self.trip_to_merge]

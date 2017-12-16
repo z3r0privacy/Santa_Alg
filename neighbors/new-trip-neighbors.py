@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
-import numpy as np
 
+import numpy as np
 import pandas as pd
+
 import utils
 from neighbor import Neighbor
-from utils import memoize
 
 
 class SplitOneTripIntoTwoNeighbor(Neighbor):
-  def __init__(self, trips, log):
+  def __init__(self, trips):
     self.trips = trips
     self.trip_to_split = np.random.randint(len(trips))
     while len(self.trips[self.trip_to_split]) < 2:
       self.trip_to_split = np.random.randint(len(trips))
     self.index_to_split = None
-    super(SplitOneTripIntoTwoNeighbor, self).__init__(log)
+    super(SplitOneTripIntoTwoNeighbor, self).__init__()
 
   def __str__(self):
     return "split-{}-at-{}".format(self.trip_to_split, self.index_to_split)
@@ -36,16 +36,18 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
         best_index = i
     return best_index, minimum_cost
 
-  @property
-  @memoize
   def cost_delta(self):
+    if self.cost is not None:
+      return self.cost
+
     trip = self.trips[self.trip_to_split]
     cost_of_old_trip = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
 
     # find split index with minimum cost
     self.index_to_split, cost_of_split = self._find_best_split_index(trip)
 
-    return cost_of_split - cost_of_old_trip
+    self.cost = cost_of_split - cost_of_old_trip
+    return self.cost
 
   def apply(self):
     # self.log.debug("Applying {}".format(self))
@@ -65,24 +67,25 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
     if self.VERIFY_COST_DELTA:
       new = utils.weighted_trip_length(self.trips[self.trip_to_split][:, utils.LOCATION], self.trips[self.trip_to_split][:, utils.WEIGHT]) + \
           utils.weighted_trip_length(new_trip[:, utils.LOCATION], new_trip[:, utils.WEIGHT])
-      utils.verify_costs_are_equal(self.cost_delta, new-old)
+      utils.verify_costs_are_equal(self.cost_delta(), new-old)
 
 
 class OptimalHorizontalTripSplitNeighbor(Neighbor):
-  def __init__(self, trips, log):
+  def __init__(self, trips):
     self.trips = trips
     self.trip_to_split = np.random.randint(len(trips))
     while len(self.trips[self.trip_to_split]) < 4:
       self.trip_to_split = np.random.randint(len(trips))
     self.longitude_to_split = None
-    super(OptimalHorizontalTripSplitNeighbor, self).__init__(log)
+    super(OptimalHorizontalTripSplitNeighbor, self).__init__()
 
   def __str__(self):
     return "hsplit-{}-at-{}".format(self.trip_to_split, self.longitude_to_split)
 
-  @property
-  @memoize
   def cost_delta(self):
+    if self.cost is not None:
+      return self.cost
+
     trip = self.trips[self.trip_to_split]
     cost_of_old_trip = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
 
@@ -108,7 +111,8 @@ class OptimalHorizontalTripSplitNeighbor(Neighbor):
         minimum_cost = cost_2_1 + cost_2_2
         self.longitude_to_split = lon
 
-    return minimum_cost - cost_of_old_trip
+    self.cost = minimum_cost - cost_of_old_trip
+    return self.cost
 
   def apply(self):
     # self.log.debug("Applying {}".format(self))
@@ -132,24 +136,25 @@ class OptimalHorizontalTripSplitNeighbor(Neighbor):
     if self.VERIFY_COST_DELTA:
       new = utils.weighted_trip_length(self.trips[self.trip_to_split][:, utils.LOCATION], self.trips[self.trip_to_split][:, utils.WEIGHT]) + \
           utils.weighted_trip_length(trip_2[:, utils.LOCATION], trip_2[:, utils.WEIGHT])
-      utils.verify_costs_are_equal(self.cost_delta, new-old)
+      utils.verify_costs_are_equal(self.cost_delta(), new-old)
 
 
 class OptimalVerticalTripSplitNeighbor(Neighbor):
-  def __init__(self, trips, log):
+  def __init__(self, trips):
     self.trips = trips
     self.trip_to_split = np.random.randint(len(trips))
     while len(self.trips[self.trip_to_split]) < 4:
       self.trip_to_split = np.random.randint(len(trips))
     self.latitude_to_split = None
-    super(OptimalVerticalTripSplitNeighbor, self).__init__(log)
+    super(OptimalVerticalTripSplitNeighbor, self).__init__()
 
   def __str__(self):
     return "vsplit-{}-at-{}".format(self.trip_to_split, self.latitude_to_split)
 
-  @property
-  @memoize
   def cost_delta(self):
+    if self.cost is not None:
+      return self.cost
+
     trip = self.trips[self.trip_to_split]
     cost_of_old_trip = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
 
@@ -175,7 +180,8 @@ class OptimalVerticalTripSplitNeighbor(Neighbor):
         minimum_cost = cost_2_1 + cost_2_2
         self.latitude_to_split = lat
 
-    return minimum_cost - cost_of_old_trip
+    self.cost = minimum_cost - cost_of_old_trip
+    return self.cost
 
   def apply(self):
     # self.log.debug("Applying {}".format(self))
@@ -199,5 +205,5 @@ class OptimalVerticalTripSplitNeighbor(Neighbor):
     if self.VERIFY_COST_DELTA:
       new = utils.weighted_trip_length(self.trips[self.trip_to_split][:, utils.LOCATION], self.trips[self.trip_to_split][:, utils.WEIGHT]) + \
           utils.weighted_trip_length(trip_2[:, utils.LOCATION], trip_2[:, utils.WEIGHT])
-      utils.verify_costs_are_equal(self.cost_delta, new-old)
+      utils.verify_costs_are_equal(self.cost_delta(), new-old)
 

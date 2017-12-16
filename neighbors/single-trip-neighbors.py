@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
-import numpy as np
 
+import numpy as np
 import pandas as pd
+
 import utils
 from neighbor import Neighbor
-from utils import memoize
 
 
 class SwapRandomGiftsInTripNeighbor(Neighbor):
-  def __init__(self, trips, log):
+  def __init__(self, trips):
     # don't overwrite existing trip
     if not hasattr(self, "trip"):
       self.trip = trips[np.random.randint(len(trips))]
@@ -24,7 +24,7 @@ class SwapRandomGiftsInTripNeighbor(Neighbor):
       self.second_gift = np.random.randint(len(self.trip))
       while self.first_gift == self.second_gift:
         self.second_gift = np.random.randint(len(self.trip))
-    super(SwapRandomGiftsInTripNeighbor, self).__init__(log)
+    super(SwapRandomGiftsInTripNeighbor, self).__init__()
 
   def __str__(self):
     return "{}-random-swap-{}-{}".format(int(self.trip[0][1]), self.first_gift, self.second_gift)
@@ -83,10 +83,12 @@ class SwapRandomGiftsInTripNeighbor(Neighbor):
     return improvement
 
 
-  @property
-  @memoize
   def cost_delta(self):
-    return self._calculate_cost_of_swapping_items(self.first_gift, self.second_gift)
+    if self.cost is not None:
+      return self.cost
+
+    self.cost = self._calculate_cost_of_swapping_items(self.first_gift, self.second_gift)
+    return self.cost
 
   def apply(self):
     # self.log.debug("Applying {}".format(self))
@@ -98,11 +100,11 @@ class SwapRandomGiftsInTripNeighbor(Neighbor):
 
     if self.VERIFY_COST_DELTA:
       new = utils.weighted_trip_length(self.trip[:, utils.LOCATION], self.trip[:, utils.WEIGHT])
-      utils.verify_costs_are_equal(self.cost_delta, new-old)
+      utils.verify_costs_are_equal(self.cost_delta(), new-old)
 
 
 class OptimalSwapInRandomTripNeighbor(SwapRandomGiftsInTripNeighbor):
-  def __init__(self, trips, log, trip=None, first_gift=None):
+  def __init__(self, trips, trip=None, first_gift=None):
     if trip is not None:
       # select random trip with at least 2 gifts
       self.trip = trips[np.random.randint(len(trips))]
@@ -116,15 +118,16 @@ class OptimalSwapInRandomTripNeighbor(SwapRandomGiftsInTripNeighbor):
     # don't assign second gift yet
     self.second_gift = -1
 
-    super(OptimalSwapInRandomTripNeighbor, self).__init__(trips, log)
+    super(OptimalSwapInRandomTripNeighbor, self).__init__(trips)
 
   def __str__(self):
     return "{}-optimal-swap-{}-{}: {:.5f}M".format(int(self.trip[0][1]), self.first_gift, self.second_gift, self.cost_delta / 1e6)
 
-  @property
-  @memoize
   def cost_delta(self):
-    minimum_cost = np.finfo(np.float64).max
+    if self.cost is not None:
+      return self.cost
+
+    self.cost = np.finfo(np.float64).max
     self.second_gift = None
 
     for i in range(len(self.trip)):
@@ -132,15 +135,15 @@ class OptimalSwapInRandomTripNeighbor(SwapRandomGiftsInTripNeighbor):
         # don't swap with self
         continue
       current_cost = self._calculate_cost_of_swapping_items(self.first_gift, i)
-      if current_cost < minimum_cost:
-        minimum_cost = current_cost
+      if current_cost < self.cost:
+        self.cost = current_cost
         self.second_gift = i
 
-    return minimum_cost
+    return self.cost
 
 
 class OptimalMoveGiftInTripNeighbor(Neighbor):
-  def __init__(self, trips, log, trip=None, gift_index=None):
+  def __init__(self, trips, trip=None, gift_index=None):
     self.trips = trips
     if trip is None:
       # select random trip with at least 4 gifts
@@ -152,14 +155,16 @@ class OptimalMoveGiftInTripNeighbor(Neighbor):
 
     self.gift_index = gift_index if gift_index is not None else np.random.randint(len(self.trips[self.trip]))
     self.new_index = None
-    super(OptimalMoveGiftInTripNeighbor, self).__init__(log)
+    super(OptimalMoveGiftInTripNeighbor, self).__init__()
 
   def __str__(self):
-    return "{}-optimal-move-{}-{}: {:.5f}M".format(int(self.trips[self.trip][0][1]), self.gift_index, self.new_index, self.cost_delta / 1e6)
+    return "{}-optimal-move-{}-{}: {:.5f}M".format(int(self.trips[self.trip][0][1]),
+        self.gift_index, self.new_index, self.cost_delta() / 1e6)
 
-  @property
-  @memoize
   def cost_delta(self):
+    if self.cost is not None:
+      return self.cost
+
     trip = self.trips[self.trip]
     gift = trip[self.gift_index]
     cost_to_remove = self._cost_to_remove_gift(trip, self.gift_index)
@@ -167,10 +172,11 @@ class OptimalMoveGiftInTripNeighbor(Neighbor):
     trip_without_gift = np.delete(trip, self.gift_index, axis=0)
     self.new_index, cost_to_insert = Neighbor.find_best_insertion_index(trip_without_gift, gift, index_to_be_removed=self.gift_index+1)
 
-    return cost_to_insert + cost_to_remove
+    self.cost = cost_to_insert + cost_to_remove
+    return self.cost
 
   def apply(self):
-    # self.log.debug("Applying {}".format(self, self.cost_delta))
+    # self.log.debug("Applying {}".format(self))
 
     trip = self.trips[self.trip]
 
@@ -187,5 +193,5 @@ class OptimalMoveGiftInTripNeighbor(Neighbor):
 
     if self.VERIFY_COST_DELTA:
       new = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
-      utils.verify_costs_are_equal(self.cost_delta, new-old)
+      utils.verify_costs_are_equal(self.cost_delta(), new-old)
 

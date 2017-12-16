@@ -9,16 +9,16 @@ import utils
 
 class Neighbor(abc.ABC):
   VERIFY_COST_DELTA = False
+  log = None
 
-  def __init__(self, log):
-    self.log = log
+  def __init__(self):
+    self.cost = None
 
-  @property
   @abc.abstractmethod
   def cost_delta(self):
     """
     Calculates the difference in cost that applying the neighbor would bring.
-    Memoization is strongly encouraged (after @property).
+    Manual memoization is strongly encouraged.
     """
     pass
 

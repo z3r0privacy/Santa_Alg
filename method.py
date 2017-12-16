@@ -55,8 +55,6 @@ class Method(abc.ABC):
 
     :returns: True if the trips are valid
     """
-    self.log.info("Evaluating trips...")
-
     if not set(self.gifts.GiftId) == set(self.trips.GiftId):
       self.log.error("Mismatch in the delivered gifts: {} to deliver, {} delivered".format(
         self.gifts.GiftId.shape[0], self.trips.GiftId.shape[0]))
@@ -70,6 +68,7 @@ class Method(abc.ABC):
       self.log.error("One or more trip is invalid!")
       return False
 
+    self.log.info("Trips are valid")
     return True
 
   def evaluate_trips(self):
