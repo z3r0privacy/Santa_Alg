@@ -15,6 +15,7 @@ class Method(abc.ABC):
     self.current_best = 22.26235 * 1e9 # balanced antarctica with north->south ordering
     self.current_best = 19.63026 * 1e9 # single-trip optimized heavy antarctica with north->south ordering
     self.current_best = 16.87566 * 1e9 # single-trip optimized balanced antarctica with north->south ordering
+    self.current_best = 16.57840 * 1e9 # slightly sa-optimized, single-trip optimized balanced antarctica with north->south ordering
     self.current_score = None
     self.current_trip_count = None
     self.gifts = gifts
@@ -77,10 +78,10 @@ class Method(abc.ABC):
     trips = [merged[merged.TripId == t] for t in unique_trips]
 
     score = utils.weighted_reindeer_weariness(merged)
-    utils.log_success_or_error(self.log, score < self.current_score, "Cost of the {} trips: {:.5f}B ({:.5f}B with {} trips)".format(
-      unique_trips.shape[0], score / 1e9, (score - self.current_score) / 1e9, self.current_trip_count))
-    utils.log_success_or_error(self.log, score < self.current_best, "Compared to best: {:.5f}B".format(
-      (score - self.current_best) / 1e9))
+    utils.log_success_or_error(self.log, score < self.current_score, "Cost of the {} trips: {:.5f}B ({:.5f}M with {} trips)".format(
+      unique_trips.shape[0], score / 1e9, (score - self.current_score) / 1e6, self.current_trip_count))
+    utils.log_success_or_error(self.log, score < self.current_best, "Compared to best: {:.5f}M".format(
+      (score - self.current_best) / 1e6))
 
     weights = np.asarray([trip.Weight.sum() for trip in trips])
     self.log.info("Sleigh utilization: min {:.2f}, max {:.2f}, avg {:.2f}, std {:.2f}".format(

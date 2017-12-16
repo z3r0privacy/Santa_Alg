@@ -70,13 +70,14 @@ class SimulatedAnnealingMethod(Method):
       return
 
     iterations = int(1e3)
-    log_interval = int(1e1)
-    checkpoint_interval = int(1e2)
+    log_interval = int(1e2)
+    checkpoint_interval = int(1e3)
+    log_neighbors = False
 
     # hyperparameters
-    initial_temperature = 1e6
+    initial_temperature = 1e5
+    temperature_decrease = iterations / 1e1
     alpha = 0.9
-
 
     moves = {}
     temperature = initial_temperature
@@ -94,14 +95,17 @@ class SimulatedAnnealingMethod(Method):
     last_cost_change = 0
     total_cost_change = 0
 
-    for i in range(iterations):
+    for i in range(iterations+1):
       if i > 0 and i % log_interval == 0:
-        self.log.debug("{:>6}/{}: T={:>9.1f}, since {:>6}: {:>4.1f}/{:>4.1f}/{:>4.1f}% good/acc/rej, cost: {:>9.1f}k".format(
+        self.log.debug("{:>6}/{}: T={:>9.1f}, since {:>6}: {:>4.1f}/{:>4.1f}/{:>4.1f}% good/acc/rej ({:>2.1f}% acc), cost: {:>9.1f}k/{:.1f}M".format(
           i, iterations, temperature, i - log_interval,
           100.0 * (good_solutions - last_good_solutions) / log_interval,
           100.0 * (accepted_bad_solutions - last_accepted_bad_solutions) / log_interval,
           100.0 * (rejected_bad_solutions - last_rejected_bad_solutions) / log_interval,
-          (total_cost_change - last_cost_change) / 1e3))
+          100.0 * (accepted_bad_solutions - last_accepted_bad_solutions) / (accepted_bad_solutions - last_accepted_bad_solutions + rejected_bad_solutions - last_rejected_bad_solutions),
+          (total_cost_change - last_cost_change) / 1e3, total_cost_change / 1e6))
+        if i == iterations:
+          break
         last_cost_change = total_cost_change
         last_good_solutions = good_solutions
         last_accepted_bad_solutions = accepted_bad_solutions
@@ -113,7 +117,7 @@ class SimulatedAnnealingMethod(Method):
           break
 
       # decrease temperature after every x solutions
-      if i > 0 and i % 1e2 == 0:
+      if i > 0 and i % temperature_decrease == 0:
         temperature *= alpha
 
       # select neighbor - try all neighbors to find any good (or the least bad) neighbor
@@ -122,7 +126,8 @@ class SimulatedAnnealingMethod(Method):
       neighbor_name = neighbor.__class__.__name__
 
       if neighbor.cost_delta < 0:
-        # self.log.success("Accepting neighbor {} with negative cost {}".format(neighbor, neighbor.cost_delta))
+        if log_neighbors:
+          self.log.success("Accepting neighbor {} with negative cost {:.1f}k".format(neighbor, neighbor.cost_delta / 1e3))
         total_cost_change += neighbor.cost_delta
         neighbor.apply()
         good_solutions += 1
@@ -134,10 +139,11 @@ class SimulatedAnnealingMethod(Method):
         self.check_gifts(trips, neighbor)
         continue
 
-      accepting_probability = np.exp(-neighbor.cost_delta/temperature)+1
+      accepting_probability = np.exp(-neighbor.cost_delta/temperature)
       if accepting_probability > np.random.rand():
-        # self.log.info("Accepting worse neighbor {:>20} (by {:>9.1f}, {:>4.1f}% chance, T={:>9.1f})".format(
-        #   str(neighbor), neighbor.cost_delta, 100 * accepting_probability, temperature))
+        if log_neighbors:
+          self.log.info("Accepting worse neighbor {:>20} (by {:>.1f}k, {:>4.1f}% chance, T={:>9.1f})".format(
+            str(neighbor), neighbor.cost_delta / 1e3, 100 * accepting_probability, temperature))
         total_cost_change += neighbor.cost_delta
         neighbor.apply()
         accepted_bad_solutions += 1
@@ -148,8 +154,9 @@ class SimulatedAnnealingMethod(Method):
         moves[neighbor_name]["acc"] += 1
         self.check_gifts(trips, neighbor)
       else:
-        # self.log.debug("Rejecting worse neighbor {:>20} (by {:>9.1f}, {:>4.1f}% chance, T={:>9.1f})".format(
-        #   str(neighbor), neighbor.cost_delta, 100 * accepting_probability, temperature))
+        if log_neighbors:
+          self.log.debug("Rejecting worse neighbor {:>20} (by {:>.1f}k, {:>4.1f}% chance, T={:>9.1f})".format(
+            str(neighbor), neighbor.cost_delta / 1e3, 100 * accepting_probability, temperature))
         rejected_bad_solutions += 1
         if not neighbor_name in moves.keys():
           moves[neighbor_name] = {}
@@ -161,7 +168,7 @@ class SimulatedAnnealingMethod(Method):
       # if (accepted_bad_solutions + rejected_bad_solutions) % 5000 == 0:
       #   temperature = (3*temperature + initial_temperature)/4
 
-    self.log.info("Finished {} iterations with total cost change {}".format(iterations, total_cost_change))
+    self.log.info("Finished {} iterations with total cost change of {}M".format(iterations, total_cost_change / 1e6))
     self.log.info("Evaluated neighbors: {} good, {} accepted/{} rejected bad solutions ({:.1f}/{:.1f}/{:.1f}%)".format(
       good_solutions, accepted_bad_solutions, rejected_bad_solutions,
       100.0 * good_solutions / iterations, 100.0 * accepted_bad_solutions / iterations, 100 * rejected_bad_solutions / iterations))
@@ -175,10 +182,10 @@ class SimulatedAnnealingMethod(Method):
     if not Neighbor.VERIFY_COST_DELTA:
       return
 
-    for trip in trips:
+    for i, trip in enumerate(trips):
       if len(set(trip[:, utils.TRIP])) != 1:
         self.log.error("Trip has gifts with unexpected number of trip IDs: {} (previous move: {})".format(set(trip[:, utils.TRIP]), str(neighbor)))
-        print(trip[:, utils.TRIP])
+        print(i, trip[:, utils.TRIP])
         raise ValueError()
 
     weights = [np.sum(t[:, utils.WEIGHT]) for t in trips]

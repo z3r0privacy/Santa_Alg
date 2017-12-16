@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import copy
+
 import numpy as np
 
 import pandas as pd
@@ -284,9 +286,9 @@ class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
   def _find_trip_to_merge(self):
     # TODO: Find reasonable heuristics
     weights = [np.sum(trip[:, utils.WEIGHT]) for trip in self.trips]
-    maximum_weight = min(300, np.median(weights), np.mean(weights))
+    maximum_weight = min(500, np.median(weights), np.mean(weights))
     lengths = [len(trip[:, utils.WEIGHT]) for trip in self.trips]
-    maximum_trip_length = min(10, np.median(lengths), np.mean(lengths))
+    maximum_trip_length = min(50, np.median(lengths), np.mean(lengths))
 
     trips_to_check = np.random.permutation(len(self.trips))
 
@@ -310,13 +312,13 @@ class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
     sorted_gifts = trip[sorting_indices]
 
     # move gifts by size to optimal other trips
-    self.trips_with_applied_merge = self.trips[:]
+    self.trips_with_applied_merge = copy.deepcopy(self.trips)
     total_cost = 0
     self.modified_trips = []
     for gift in sorted_gifts:
-      # find the index of the current gift in self.trips
+      # find the index of the current gift in the current trip that is being merged
       gift_index = -1
-      for i, g in enumerate(trip):
+      for i, g in enumerate(self.trips_with_applied_merge[self.trip_to_merge]):
         if g[utils.GIFT] == gift[utils.GIFT]:
           gift_index = i
           break
@@ -325,8 +327,6 @@ class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
           self.trip_to_merge, gift_index)
       total_cost += neighbor.cost_delta
       neighbor.apply()
-      # update the own trip
-      trip = self.trips_with_applied_merge[self.trip_to_merge]
       if not neighbor.destination_trip in self.modified_trips:
         self.modified_trips.append(neighbor.destination_trip)
 

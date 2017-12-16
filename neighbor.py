@@ -8,7 +8,7 @@ import utils
 
 
 class Neighbor(abc.ABC):
-  VERIFY_COST_DELTA = True
+  VERIFY_COST_DELTA = False
 
   def __init__(self, log):
     self.log = log
