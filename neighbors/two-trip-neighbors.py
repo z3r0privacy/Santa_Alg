@@ -33,10 +33,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
   @property
   @memoize
   def cost_delta(self):
-    if self.source_trip is not None:
-      if len(self.trips[self.source_trip]) < 2:
-        raise ValueError("Invalid trip")
-    else:
+    if self.source_trip is None:
       self.source_trip = np.random.randint(len(self.trips))
       while len(self.trips[self.source_trip]) < 2:
         self.source_trip = np.random.randint(len(self.trips))
@@ -108,11 +105,14 @@ class MoveGiftToLightestTripNeighbor(MoveGiftToAnotherTripNeighbor):
 
 
 class MoveGiftToOptimalTripNeighbor(MoveGiftToAnotherTripNeighbor):
-  def __init__(self, trips, log):
-    self.source_trip = np.random.randint(len(trips))
-    while len(trips[self.source_trip]) < 2:
+  def __init__(self, trips, log, source_trip=None, gift_to_move=None):
+    if source_trip is None:
       self.source_trip = np.random.randint(len(trips))
-    self.gift_to_move = np.random.randint(len(trips[self.source_trip]))
+      while len(trips[self.source_trip]) < 2:
+        self.source_trip = np.random.randint(len(trips))
+    else:
+      self.source_trip = source_trip
+    self.gift_to_move = np.random.randint(len(trips[self.source_trip])) if gift_to_move is None else gift_to_move
     super(MoveGiftToOptimalTripNeighbor, self).__init__(trips, log)
 
   def __str__(self):
@@ -268,4 +268,94 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
       new = utils.weighted_trip_length(first_trip[:, utils.LOCATION], first_trip[:, utils.WEIGHT]) + \
           utils.weighted_trip_length(second_trip[:, utils.LOCATION], second_trip[:, utils.WEIGHT])
       utils.verify_costs_are_equal(self.cost_delta, new-old)
+
+
+class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
+  def __init__(self, trips, log):
+    self.trips = trips
+    self.trip_to_merge = None
+    self.trips_with_applied_merge = None
+    self.modified_trips = None
+    super(OptimalMergeTripIntoAdjacentNeighbor, self).__init__(log)
+
+  def __str__(self):
+    return "merge-{}-optimally".format(self.trip_to_merge)
+
+  def _find_trip_to_merge(self):
+    # TODO: Find reasonable heuristics
+    weights = [np.sum(trip[:, utils.WEIGHT]) for trip in self.trips]
+    maximum_weight = min(300, np.median(weights), np.mean(weights))
+    lengths = [len(trip[:, utils.WEIGHT]) for trip in self.trips]
+    maximum_trip_length = min(10, np.median(lengths), np.mean(lengths))
+
+    trips_to_check = np.random.permutation(len(self.trips))
+
+    for trip_index in trips_to_check:
+      trip = self.trips[trip_index]
+      trip_weight = np.sum(trip[:, utils.WEIGHT])
+      if trip_weight < maximum_weight and len(trip) < maximum_trip_length:
+        return trip_index
+
+  @property
+  @memoize
+  def cost_delta(self):
+    self.trip_to_merge = self._find_trip_to_merge()
+    if self.trip_to_merge is None:
+      return 0
+
+    trip = self.trips[self.trip_to_merge]
+
+    # sort gifts by descending weight
+    sorting_indices = trip[:, utils.WEIGHT].argsort()[::-1]
+    sorted_gifts = trip[sorting_indices]
+
+    # move gifts by size to optimal other trips
+    self.trips_with_applied_merge = self.trips[:]
+    total_cost = 0
+    self.modified_trips = []
+    for gift in sorted_gifts:
+      # find the index of the current gift in self.trips
+      gift_index = -1
+      for i, g in enumerate(trip):
+        if g[utils.GIFT] == gift[utils.GIFT]:
+          gift_index = i
+          break
+      # move gift
+      neighbor = MoveGiftToOptimalTripNeighbor(self.trips_with_applied_merge, self.log,
+          self.trip_to_merge, gift_index)
+      total_cost += neighbor.cost_delta
+      neighbor.apply()
+      # update the own trip
+      trip = self.trips_with_applied_merge[self.trip_to_merge]
+      if not neighbor.destination_trip in self.modified_trips:
+        self.modified_trips.append(neighbor.destination_trip)
+
+    return total_cost
+
+
+  def apply(self):
+    if self.trip_to_merge is None:
+      self.log.warning("Not applying trip merge because no valid merge was found")
+      return
+
+    # self.log.debug("Applying {}".format(self))
+
+    trip = self.trips[self.trip_to_merge]
+
+    if self.VERIFY_COST_DELTA:
+      old = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
+      for trip_index in self.modified_trips:
+        old += utils.weighted_trip_length(self.trips[trip_index][:, utils.LOCATION], self.trips[trip_index][:, utils.WEIGHT])
+
+    self.trips.clear()
+    self.trips.extend(self.trips_with_applied_merge)
+
+    if self.VERIFY_COST_DELTA:
+      new = 0
+      for trip_index in self.modified_trips:
+        new += utils.weighted_trip_length(self.trips[trip_index][:, utils.LOCATION], self.trips[trip_index][:, utils.WEIGHT])
+      utils.verify_costs_are_equal(self.cost_delta, new-old)
+
+    # only delete the row afterwards to not mess up the indexes for the cost calculation
+    del self.trips[self.trip_to_merge]
 

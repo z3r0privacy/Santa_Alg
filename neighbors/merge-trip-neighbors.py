@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 
 import numpy as np
-import pandas as pd
 
+import pandas as pd
 import utils
 from neighbor import Neighbor
 from utils import memoize
 
-
-# TODO: Try merging current trip entirely into its "adjacent" trips
 
 class MergeTripIntoOthersNeighbor(Neighbor):
   def __init__(self, trips, log):
@@ -37,7 +35,6 @@ class MergeTripIntoOthersNeighbor(Neighbor):
 
       # sort gifts by descending weight
       sorting_indices = trip[:, utils.WEIGHT].argsort()[::-1]
-
       sorted_gifts = trip[sorting_indices]
 
       # try to assign all gifts of the current trip to other trips

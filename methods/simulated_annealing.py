@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 
 import numpy as np
-import pandas as pd
 
+import pandas as pd
 import utils
 from method import Method
 from neighbor import Neighbor
 from neighbors import (MoveGiftToAnotherTripNeighbor,
                        MoveGiftToLightestTripNeighbor,
                        MoveGiftToOptimalTripNeighbor,
-                       OptimalMoveGiftInTripNeighbor,
                        OptimalHorizontalTripSplitNeighbor,
-                       OptimalVerticalTripSplitNeighbor,
+                       OptimalMergeTripIntoAdjacentNeighbor,
+                       OptimalMoveGiftInTripNeighbor,
                        OptimalSwapInRandomTripNeighbor,
+                       OptimalVerticalTripSplitNeighbor,
                        SplitOneTripIntoTwoNeighbor,
                        SwapGiftsAcrossTripsNeighbor,
                        SwapRandomGiftsInTripNeighbor)
@@ -24,10 +25,8 @@ class SimulatedAnnealingMethod(Method):
     return "sim"
 
   def _get_neighbors(self, trips):
-    number_of_same_neighbor = 1
-
     # current neighbor to test
-    # return [OptimalVerticalTripSplitNeighbor(trips, self.log) for i in range(number_of_same_neighbor)]
+    # return [OptimalMergeTripIntoAdjacentNeighbor(trips, self.log)]
 
     # optimum neighbors
     # TODO: Try different weights per neighbor and different weights for trips within neighbors (based on cost/weight)
@@ -59,13 +58,8 @@ class SimulatedAnnealingMethod(Method):
         # MERGE-TRIP NEIGHBORHOOD
         # 1000 iterations:
         # merge current trip into neighbors
+        OptimalMergeTripIntoAdjacentNeighbor(trips, self.log),
         ]
-
-    # careful with subclasses of subclasses...
-    return np.random.permutation(np.array(
-      [[neighbor(trips, self.log) for i in range(number_of_same_neighbor)]
-        for neighbor in Neighbor.__subclasses__()]
-      ).flatten())
 
   def run(self, args):
     """
