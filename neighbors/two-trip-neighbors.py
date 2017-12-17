@@ -46,7 +46,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
       # we should have *all* of these set
       return self.cost_to_insert_in_destination + self._cost_to_remove_gift(source, self.gift_to_move)
 
-    self.gift_to_move = np.random.randint(len(self.trips[self.source_trip]))
+    self.gift_to_move = np.random.randint(len(source))
     self.destination_trip = self._get_valid_target_trip()
 
     gift = source[self.gift_to_move]
@@ -69,7 +69,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
       old = utils.weighted_trip_length(source[:, utils.LOCATION], source[:, utils.WEIGHT]) + \
           utils.weighted_trip_length(destination[:, utils.LOCATION], destination[:, utils.WEIGHT])
 
-    gift = source[self.gift_to_move]
+    gift = source[self.gift_to_move] # NOTE: This apparently can be index-out-of-bounds!
     gift[utils.TRIP] = destination[0, utils.TRIP]
 
     destination = np.insert(destination, self.destination_insertion_index, gift, axis=0)

@@ -31,6 +31,7 @@ uninstall:
 archive:
 	mv solutions/*.csv old-solutions/
 	for sol in old-solutions/*.csv; do gzip $$sol; done
+	mv checkpoints/*.pkl old-checkpoints/
 	mv checkpoints/*.csv old-checkpoints/
 	for chk in old-checkpoints/*.csv; do gzip $$chk; done
 

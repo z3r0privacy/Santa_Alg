@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import pickle
 
 import utils
 
@@ -64,13 +65,13 @@ def print_stats(file_name=None, df=None, plots=False):
   costs = np.array([utils.weighted_trip_length(df[df.TripId == trip][["Longitude", "Latitude"]], df[df.TripId == trip].Weight) for trip in trips])
   efficiencies = weights / costs
   print("Score: {:.5f}B for {} trips".format(score / 1e9, len(trip_sizes)))
-  print("Trip sizes: min/median/max:\t\t{:>5.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
+  print("Trip sizes: min/median/max:\t\t{:>6.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
     trip_sizes.min(), trip_sizes.median(), trip_sizes.max(), trip_sizes.mean(), trip_sizes.std()**2))
-  print("Costs per trip: min/median/max [M]:\t{:>5.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
+  print("Costs per trip: min/median/max [M]:\t{:>6.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
     costs.min()/1e6, np.median(costs)/1e6, costs.max()/1e6, costs.mean()/1e6, (costs.std()/1e6)**2))
-  print("Weights per trip: min/median/max:\t{:>5.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
+  print("Weights per trip: min/median/max:\t{:>6.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
     weights.min(), np.median(weights), weights.max(), weights.mean(), (weights.std())**2))
-  print("Efficiencies per trip: min/median/max:\t{:>5.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
+  print("Efficiencies per trip: min/median/max:\t{:>6.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
     efficiencies.min()*1e6, np.median(efficiencies)*1e6, efficiencies.max()*1e6, efficiencies.mean()*1e6, (efficiencies.std()*1e6)**2))
 
   if plots:
@@ -85,4 +86,18 @@ def print_stats(file_name=None, df=None, plots=False):
     axes[1, 1].set_title("Trip sizes")
     if file_name is not None:
       fig.suptitle("Stats for {}".format(file_name))
+
+def plot_metrics(file_name):
+  with open(file_name, "rb") as fh:
+    (iterations, interval, temperatures, good_solutions, accepted_solutions, rejected_solutions, costs) = pickle.load(fh)
+  x = np.linspace(0, iterations, int(iterations/interval))
+  plt.plot(x, [cost / 1e4 for cost in costs], label="Cost change [10k]", color="blue")
+  plt.plot(x, good_solutions, label="Good solutions", color="green")
+  plt.plot(x, accepted_solutions, label="Accepted solutions", color="orange")
+  plt.plot(x, rejected_solutions, label="Rejected solutions", color="red")
+  plt.plot(x, [temp / 1e3 for temp in temperatures], label="Temperature [1k]", color="gray")
+  plt.legend()
+  plt.grid()
+  plt.tight_layout()
+  plt.title("Metrics at checkpoint '{}'".format(file_name))
 
