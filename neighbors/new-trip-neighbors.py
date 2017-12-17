@@ -71,9 +71,9 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
 
 
 class OptimalHorizontalTripSplitNeighbor(Neighbor):
-  def __init__(self, trips):
+  def __init__(self, trips, trip=None):
     self.trips = trips
-    self.trip_to_split = np.random.randint(len(trips))
+    self.trip_to_split = np.random.randint(len(trips)) if trip is None else trip
     while len(self.trips[self.trip_to_split]) < 4:
       self.trip_to_split = np.random.randint(len(trips))
     self.longitude_to_split = None
@@ -140,9 +140,9 @@ class OptimalHorizontalTripSplitNeighbor(Neighbor):
 
 
 class OptimalVerticalTripSplitNeighbor(Neighbor):
-  def __init__(self, trips):
+  def __init__(self, trips, trip=None):
     self.trips = trips
-    self.trip_to_split = np.random.randint(len(trips))
+    self.trip_to_split = np.random.randint(len(trips)) if trip is None else trip
     while len(self.trips[self.trip_to_split]) < 4:
       self.trip_to_split = np.random.randint(len(trips))
     self.latitude_to_split = None

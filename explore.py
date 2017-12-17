@@ -57,22 +57,20 @@ def print_stats(file_name=None, df=None, plots=False):
   if df is None:
     print("Need to specify either file name or df")
 
-  # misc
   score = utils.weighted_reindeer_weariness(df)
   trip_sizes = df.groupby("TripId").size()
   trips = df.TripId.unique()
   weights = np.array([df[df.TripId == trip].Weight.sum() for trip in trips])
   costs = np.array([utils.weighted_trip_length(df[df.TripId == trip][["Longitude", "Latitude"]], df[df.TripId == trip].Weight) for trip in trips])
   efficiencies = weights / costs
-  print(efficiencies)
   print("Score: {:.5f}B for {} trips".format(score / 1e9, len(trip_sizes)))
-  print("Trip sizes: min/median/max:\t\t{:.3f}\t{:.3f}\t{:.3f};\t{:.3f}+-{:.3f}".format(
+  print("Trip sizes: min/median/max:\t\t{:>5.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
     trip_sizes.min(), trip_sizes.median(), trip_sizes.max(), trip_sizes.mean(), trip_sizes.std()**2))
-  print("Costs per trip: min/median/max [M]:\t{:.3f}\t{:.3f}\t{:.3f};\t{:.3f}+-{:.3f}".format(
+  print("Costs per trip: min/median/max [M]:\t{:>5.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
     costs.min()/1e6, np.median(costs)/1e6, costs.max()/1e6, costs.mean()/1e6, (costs.std()/1e6)**2))
-  print("Weights per trip: min/median/max:\t{:.3f}\t{:.3f}\t{:.3f};\t{:.3f}+-{:.3f}".format(
+  print("Weights per trip: min/median/max:\t{:>5.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
     weights.min(), np.median(weights), weights.max(), weights.mean(), (weights.std())**2))
-  print("Efficiencies per trip: min/median/max:\t{:.3f}\t{:.3f}\t{:.3f};\t{:.3f}+-{:.3f}".format(
+  print("Efficiencies per trip: min/median/max:\t{:>5.2f}\t{:>6.2f}\t{:>7.2f};\t{:>6.2f}+-{:>9.2f}".format(
     efficiencies.min()*1e6, np.median(efficiencies)*1e6, efficiencies.max()*1e6, efficiencies.mean()*1e6, (efficiencies.std()*1e6)**2))
 
   if plots:
@@ -85,4 +83,6 @@ def print_stats(file_name=None, df=None, plots=False):
     axes[1, 0].set_title("Efficiencies")
     axes[1, 1].hist(trip_sizes, bins=100)
     axes[1, 1].set_title("Trip sizes")
+    if file_name is not None:
+      fig.suptitle("Stats for {}".format(file_name))
 

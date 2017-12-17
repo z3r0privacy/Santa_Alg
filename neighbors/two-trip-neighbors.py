@@ -108,13 +108,13 @@ class MoveGiftToLightestTripNeighbor(MoveGiftToAnotherTripNeighbor):
 
 
 class MoveGiftToOptimalTripNeighbor(MoveGiftToAnotherTripNeighbor):
-  def __init__(self, trips, source_trip=None, gift_to_move=None):
-    if source_trip is None:
+  def __init__(self, trips, trip=None, gift_to_move=None):
+    if trip is None:
       self.source_trip = np.random.randint(len(trips))
       while len(trips[self.source_trip]) < 2:
         self.source_trip = np.random.randint(len(trips))
     else:
-      self.source_trip = source_trip
+      self.source_trip = trip
     self.gift_to_move = np.random.randint(len(trips[self.source_trip])) if gift_to_move is None else gift_to_move
     super(MoveGiftToOptimalTripNeighbor, self).__init__(trips)
 
@@ -277,9 +277,9 @@ class SwapGiftsAcrossTripsNeighbor(Neighbor):
 
 
 class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
-  def __init__(self, trips):
+  def __init__(self, trips, trip=None):
     self.trips = trips
-    self.trip_to_merge = None
+    self.trip_to_merge = trip
     self.trips_with_applied_merge = None
     self.modified_trips = None
     super(OptimalMergeTripIntoAdjacentNeighbor, self).__init__()
@@ -306,7 +306,8 @@ class OptimalMergeTripIntoAdjacentNeighbor(Neighbor):
     if self.cost is not None:
       return self.cost
 
-    self.trip_to_merge = self._find_trip_to_merge()
+    if self.trip_to_merge is None:
+      self.trip_to_merge = self._find_trip_to_merge()
     if self.trip_to_merge is None:
       return 0
 

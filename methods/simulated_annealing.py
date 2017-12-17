@@ -27,7 +27,7 @@ class SimulatedAnnealingMethod(Method):
   def name(self):
     return "sim"
 
-  def _get_neighbors(self, trips):
+  def _get_neighbors(self, trips, trip=None):
     # current neighbor to test
     # return [OptimalMergeTripIntoAdjacentNeighbor(trips, self.log)]
 
@@ -80,16 +80,17 @@ class SimulatedAnnealingMethod(Method):
     if all_trips is None:
       return
 
-    iterations = int(1e2)
-    log_interval = int(1e1)
-    checkpoint_interval = int(1e3)
+    iterations = int(1e3)
+    log_interval = int(iterations / 1e3)
+    checkpoint_interval = int(iterations / 1e2)
+    bad_trips_iterations = int(1e2)
     worker_size = 2
     log_neighbors = False
     treat_slow_jobs_differntly = True
 
     # hyperparameters
-    initial_temperature = args.temperature or 1e5
-    temperature_decrease = iterations / 1e1
+    initial_temperature = args.temperature or 1e4
+    temperature_decrease = int(iterations / 1e2)
     alpha = args.alpha or 0.9
 
     moves = {}
@@ -108,8 +109,9 @@ class SimulatedAnnealingMethod(Method):
     last_cost_change = 0
     total_cost_change = 0
 
-    self.log.info("Parameters: {} iterations, logs every {}, checkpoints every {}; {} workers; T={}, decrease every {}, alpha={}".format(
-      iterations, log_interval, checkpoint_interval, worker_size, initial_temperature, temperature_decrease, alpha))
+    self.log.info("Parameters: {} iterations, {} with bad trips, logs every {}, checkpoints every {}; {} workers; T={}, decrease every {}, alpha={}".format(
+      iterations, bad_trips_iterations, log_interval, checkpoint_interval, worker_size,
+      initial_temperature, temperature_decrease, alpha))
 
     with Pool(worker_size) as pool:
       for i in range(iterations+1):
@@ -119,7 +121,7 @@ class SimulatedAnnealingMethod(Method):
             100.0 * (good_solutions - last_good_solutions) / log_interval,
             100.0 * (accepted_bad_solutions - last_accepted_bad_solutions) / log_interval,
             100.0 * (rejected_bad_solutions - last_rejected_bad_solutions) / log_interval,
-            100.0 * (accepted_bad_solutions - last_accepted_bad_solutions) / (accepted_bad_solutions - last_accepted_bad_solutions + rejected_bad_solutions - last_rejected_bad_solutions),
+            100.0 * (accepted_bad_solutions - last_accepted_bad_solutions) / (accepted_bad_solutions - last_accepted_bad_solutions + rejected_bad_solutions - last_rejected_bad_solutions + 1e-6),
             (total_cost_change - last_cost_change) / 1e3, total_cost_change / 1e6))
           if i == iterations:
             break
@@ -127,7 +129,6 @@ class SimulatedAnnealingMethod(Method):
           last_good_solutions = good_solutions
           last_accepted_bad_solutions = accepted_bad_solutions
           last_rejected_bad_solutions = rejected_bad_solutions
-          print("gc")
           gc.collect()
 
         if i > 0 and i % checkpoint_interval == 0:
@@ -140,7 +141,13 @@ class SimulatedAnnealingMethod(Method):
           temperature *= alpha
 
         # select neighbor
-        neighbors = self._get_neighbors(trips)
+        if i < bad_trips_iterations:
+          bad_trip = utils.get_index_of_inefficient_trip(trips)
+          neighbors = self._get_neighbors(trips, trip=bad_trip)
+        elif i == bad_trips_iterations:
+          self.log.info("No longer optimizing bad trips specifically")
+        else:
+          neighbors = self._get_neighbors(trips)
         slow_neighbors = self._get_slow_neighbors(trips)
         if not treat_slow_jobs_differntly:
           neighbors = slow_neighbors + neighbors
@@ -196,7 +203,7 @@ class SimulatedAnnealingMethod(Method):
             moves[neighbor_name]["rej"] = 0
           moves[neighbor_name]["rej"] += 1
 
-    self.log.info("Finished {} iterations with total cost change of {}M".format(iterations, total_cost_change / 1e6))
+    self.log.info("Finished {} iterations with total cost change of {:.3f}M".format(iterations, total_cost_change / 1e6))
     self.log.info("Evaluated neighbors: {} good, {} accepted/{} rejected bad solutions ({:.1f}/{:.1f}/{:.1f}%)".format(
       good_solutions, accepted_bad_solutions, rejected_bad_solutions,
       100.0 * good_solutions / iterations, 100.0 * accepted_bad_solutions / iterations, 100 * rejected_bad_solutions / iterations))
