@@ -143,7 +143,7 @@ class SimulatedAnnealingMethod(Method):
           gc.collect()
 
         if i > 0 and i % checkpoint_interval == 0:
-          if not self.create_checkpoint(trips, i, iterations, checkpoint_interval, args.evaluation_id, args.random_seed,
+          if not self.create_checkpoint(trips, i, iterations, log_interval, args.evaluation_id, args.random_seed,
               temperatures, overall_good_solutions, overall_accepted_solutions, overall_rejected_solutions, overall_cost):
             self.log.error("Aborting evaluation because the current solution is invalid")
             break
@@ -158,6 +158,7 @@ class SimulatedAnnealingMethod(Method):
           neighbors = self._get_neighbors(trips, trip=bad_trip)
         elif i == bad_trips_iterations:
           self.log.warning("No longer optimizing bad trips specifically")
+          neighbors = self._get_neighbors(trips)
         else:
           neighbors = self._get_neighbors(trips)
         slow_neighbors = self._get_slow_neighbors(trips)
@@ -249,7 +250,7 @@ class SimulatedAnnealingMethod(Method):
       self.log.error("Wrong number of gifts: {} (previous move: {})".format(len(gifts), str(neighbor)))
       raise ValueError()
 
-  def create_checkpoint(self, trips, i, iterations, checkpoint_interval, evaluation_id, random_seed,
+  def create_checkpoint(self, trips, i, iterations, metrics_interval, evaluation_id, random_seed,
       temperatures, good_solutions, accepted_solutions, rejected_solutions, costs):
     checkpoint_file = "checkpoints/{}_{}_{}.csv".format(evaluation_id, random_seed, i)
     metrics_file = "checkpoints/metrics_{}_{}_{}.pkl".format(evaluation_id, random_seed, i)
@@ -261,7 +262,7 @@ class SimulatedAnnealingMethod(Method):
     self.write_trips(checkpoint_file)
 
     with open(metrics_file, "wb") as fh:
-      pickle.dump((i, checkpoint_interval, temperatures, good_solutions, accepted_solutions, rejected_solutions, costs), fh)
+      pickle.dump((i, metrics_interval, temperatures, good_solutions, accepted_solutions, rejected_solutions, costs), fh)
 
     return self.verify_trips()
 
