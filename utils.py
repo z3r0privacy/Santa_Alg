@@ -78,7 +78,7 @@ def distance(a, b):
   bb = tuple(b)
   return _actually_get_distance(aa, bb) if aa < bb else _actually_get_distance(bb, aa)
 
-@lru_cache(maxsize=int(32*32*1024*2*0.1)) # should be around 0.1GB
+@lru_cache(maxsize=int(32*32*1024*2*0.05)) # should be around 0.05GB
 def _actually_get_distance(a, b):
   return haversine(a, b)
 
@@ -156,7 +156,7 @@ def verify_costs_are_equal(a, b):
 def get_index_of_inefficient_trip(trips):
   inefficiencies = [weighted_trip_length(trip[:, LOCATION], trip[:, WEIGHT]) / trip[:, WEIGHT].sum() for trip in trips]
   sorted_inefficiencies = np.sort(inefficiencies)
-  worst_inefficiencies = sorted_inefficiencies[int(len(trips)*3.0/4):]
+  worst_inefficiencies = sorted_inefficiencies[int(len(trips)*2.0/3):]
 
   indexes = [np.where(inefficiencies == inef)[0][0] for inef in worst_inefficiencies]
   return indexes[np.random.randint(len(indexes))]

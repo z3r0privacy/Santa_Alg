@@ -28,7 +28,7 @@ class SimulatedAnnealingMethod(Method):
   def name(self):
     return "sim"
 
-  def _get_neighbors(self, trips, trip=None):
+  def _get_neighbors(self, trips, trip):
     # current neighbor to test
     # return [OptimalMergeTripIntoAdjacentNeighbor(trips, self.log)]
 
@@ -40,21 +40,21 @@ class SimulatedAnnealingMethod(Method):
         # MERGE-TRIP NEIGHBORHOOD
         # 1000 iterations:
         # merge current trip into neighbors
-        # OptimalMergeTripIntoAdjacentNeighbor(trips),
+        # OptimalMergeTripIntoAdjacentNeighbor(trips, trip),
 
         # TWO-TRIP NEIGHBORHOOD
         # 1000 iterations: 6m11s
-        MoveGiftToOptimalTripNeighbor(trips),
+        MoveGiftToOptimalTripNeighbor(trips, trip),
 
         # NEW-TRIP NEIGHBORHOOD
         # 1000 iterations: 1m15s
-        OptimalHorizontalTripSplitNeighbor(trips),
+        OptimalHorizontalTripSplitNeighbor(trips, trip),
         # 1000 iterations: 1m20s
-        OptimalVerticalTripSplitNeighbor(trips),
+        OptimalVerticalTripSplitNeighbor(trips, trip),
 
         # SINGLE-TRIP NEIGHBORHOOD
         # 1000 iterations: 1m44s
-        OptimalSwapInRandomTripNeighbor(trips),
+        OptimalSwapInRandomTripNeighbor(trips, trip),
         # 1000 iterations single-threaded: 1m51s
         # 1000 iterations on four threads: 2m6s
         # 1000 iterations on two threads:  2m10s
@@ -62,15 +62,15 @@ class SimulatedAnnealingMethod(Method):
         # 1000 iterations on two threads with length > 100: 1m43s
         # 1000 iterations on two threads with length > 200: 1m45s
         # 1000 iterations on two threads with length > 500: 1m44s
-        OptimalMoveGiftInTripNeighbor(trips),
+        OptimalMoveGiftInTripNeighbor(trips, trip),
         ]
 
-  def _get_slow_neighbors(self, trips):
+  def _get_slow_neighbors(self, trips, trip):
     return [
         # MERGE-TRIP NEIGHBORHOOD
         # 1000 iterations:
         # merge current trip into neighbors
-        OptimalMergeTripIntoAdjacentNeighbor(trips),
+        OptimalMergeTripIntoAdjacentNeighbor(trips, trip),
         ]
 
   def run(self, args):
@@ -87,12 +87,14 @@ class SimulatedAnnealingMethod(Method):
     bad_trips_iterations = int(iterations / 1e1)
     worker_size = 2
     log_neighbors = False
+    # True seems faster for eye, even when probably most of them have to be evaluated anyway
+    # not sure about balanced... probably also True
     treat_slow_jobs_differntly = True
 
     # hyperparameters
-    initial_temperature = args.temperature or 1e4
+    initial_temperature = args.temperature or 5e4
     temperature_decrease = int(iterations / 1e1)
-    alpha = args.alpha or 0.9
+    alpha = args.alpha or 0.85
 
     moves = {}
     temperature = initial_temperature
@@ -115,14 +117,14 @@ class SimulatedAnnealingMethod(Method):
     overall_cost = []
     temperatures = []
 
-    self.log.info("Parameters: {} iterations, {} with bad trips, logs every {}, checkpoints every {}; {} workers; T={}, decrease every {}, alpha={}".format(
-      iterations, bad_trips_iterations, log_interval, checkpoint_interval, worker_size,
-      initial_temperature, temperature_decrease, alpha))
+    self.log.info("Parameters: {} iterations, with {} bad trips, treat slow differently: {}, logs every {}, checkpoints every {}; {} workers; T={}, decrease every {}, alpha={}".format(
+      iterations, bad_trips_iterations, treat_slow_jobs_differntly, log_interval, checkpoint_interval,
+      worker_size, initial_temperature, temperature_decrease, alpha))
 
     with Pool(worker_size) as pool:
       for i in range(iterations+1):
         if i > 0 and i % log_interval == 0:
-          self.log.debug("{:>6}/{}: T={:>9.1f}, since {:>6}: {:>5.1f}/{:>5.1f}/{:>5.1f}% good/acc/rej ({:>2.1f}% acc), cost: {:>9.1f}k/{:.1f}M".format(
+          self.log.debug("{:>6}/{}: T={:>9.1f}, since {:>6}: {:>5.1f}/{:>5.1f}/{:>5.1f}% good/acc/rej ({:>5.1f}% acc), cost: {:>9.1f}k/{:.1f}M".format(
             i, iterations, temperature, i - log_interval,
             100.0 * (good_solutions - last_good_solutions) / log_interval,
             100.0 * (accepted_bad_solutions - last_accepted_bad_solutions) / log_interval,
@@ -153,27 +155,38 @@ class SimulatedAnnealingMethod(Method):
           temperature *= alpha
 
         # select neighbor
-        if i < bad_trips_iterations:
-          bad_trip = utils.get_index_of_inefficient_trip(trips)
-          neighbors = self._get_neighbors(trips, trip=bad_trip)
-        elif i == bad_trips_iterations:
+        # if we're working with bad trips, get a trip index
+        trip = utils.get_index_of_inefficient_trip(trips) if i < bad_trips_iterations else None
+        if i == bad_trips_iterations:
           self.log.warning("No longer optimizing bad trips specifically")
-          neighbors = self._get_neighbors(trips)
-        else:
-          neighbors = self._get_neighbors(trips)
-        slow_neighbors = self._get_slow_neighbors(trips)
+        neighbors = self._get_neighbors(trips, trip)
+
+        # get slow and normal neighbors
+        slow_neighbors = self._get_slow_neighbors(trips, trip)
         if not treat_slow_jobs_differntly:
           neighbors = slow_neighbors + neighbors
           slow_neighbors.clear()
         jobs = []
+
+        # evaluate normal neighbors
         for neighbor in neighbors:
           jobs.append(pool.apply_async(neighbor.cost_delta))
         costs = [j.get() for j in jobs]
+
+        # find cheapest neighbor
         neighbor = neighbors[costs.index(min(costs))]
+
+        # if cheapest neighbor is bad, select neighbor randomly - we always prefer good solutions,
+        # but if there is none, no specific neighbor should be preferred since their costs are biased
+        if neighbor.cost_delta() >= 0:
+          neighbor = neighbors[np.random.randint(len(neighbors))]
+
+        # if cheapest neighbor is bad and we have slow neighbors to check, evaluate those and
+        # pick them if they're cheaper (but not if they do nothing)
         while neighbor.cost_delta() >= 0 and len(slow_neighbors) > 0:
           slow_neighbor = slow_neighbors[-1]
           slow_neighbors.remove(slow_neighbor)
-          if slow_neighbor.cost_delta() < neighbor.cost_delta():
+          if slow_neighbor.cost_delta() != 0 and slow_neighbor.cost_delta() < neighbor.cost_delta():
             neighbor = slow_neighbor
         neighbor_name = neighbor.__class__.__name__
 

@@ -87,11 +87,16 @@ def print_stats(file_name=None, df=None, plots=False):
     if file_name is not None:
       fig.suptitle("Stats for {}".format(file_name))
 
-def plot_metrics(file_name):
+def plot_metrics(file_name, cumulative=True, cost_factor=1e4):
   with open(file_name, "rb") as fh:
     (iterations, interval, temperatures, good_solutions, accepted_solutions, rejected_solutions, costs) = pickle.load(fh)
+  if cumulative:
+    costs = np.cumsum(costs)
+    good_solutions = np.cumsum(good_solutions)
+    accepted_solutions = np.cumsum(accepted_solutions)
+    rejected_solutions = np.cumsum(rejected_solutions)
   x = np.linspace(0, iterations, int(iterations/interval))
-  plt.plot(x, [cost / 1e4 for cost in costs], label="Cost change [10k]", color="blue")
+  plt.plot(x, [cost / cost_factor for cost in costs], label="Cost change [{}]".format(cost_factor), color="blue")
   plt.plot(x, good_solutions, label="Good solutions", color="green")
   plt.plot(x, accepted_solutions, label="Accepted solutions", color="orange")
   plt.plot(x, rejected_solutions, label="Rejected solutions", color="red")
