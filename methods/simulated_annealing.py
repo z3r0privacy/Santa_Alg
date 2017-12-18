@@ -50,7 +50,7 @@ class SimulatedAnnealingMethod(Method):
         # 1000 iterations: 1m15s
         OptimalHorizontalTripSplitNeighbor(trips, trip),
         # 1000 iterations: 1m20s
-        OptimalVerticalTripSplitNeighbor(trips, trip),
+        # OptimalVerticalTripSplitNeighbor(trips, trip), # disabled because that doesn't help anyway
 
         # SINGLE-TRIP NEIGHBORHOOD
         # 1000 iterations: 1m44s
@@ -70,7 +70,7 @@ class SimulatedAnnealingMethod(Method):
         # MERGE-TRIP NEIGHBORHOOD
         # 1000 iterations:
         # merge current trip into neighbors
-        OptimalMergeTripIntoAdjacentNeighbor(trips, trip),
+        # OptimalMergeTripIntoAdjacentNeighbor(trips, trip), # disabled because that takes forever and doesn't seem to help
         ]
 
   def run(self, args):
@@ -80,6 +80,8 @@ class SimulatedAnnealingMethod(Method):
     all_trips = self._load_trips_from_file(args)
     if all_trips is None:
       return
+
+    # TODO: Try entirely random neighbors without merging trips (all the "fast" neighbors)
 
     iterations = int(1e4)
     log_interval = int(iterations / 1e3)
@@ -92,9 +94,9 @@ class SimulatedAnnealingMethod(Method):
     treat_slow_jobs_differntly = True
 
     # hyperparameters
-    initial_temperature = args.temperature or 5e4
-    temperature_decrease = int(iterations / 1e1)
-    alpha = args.alpha or 0.85
+    initial_temperature = args.temperature or 4e4
+    temperature_decrease = int(iterations / 5e2)
+    alpha = args.alpha or 0.95
 
     moves = {}
     temperature = initial_temperature
@@ -190,6 +192,7 @@ class SimulatedAnnealingMethod(Method):
             neighbor = slow_neighbor
         neighbor_name = neighbor.__class__.__name__
 
+        # TODO: Optimize same trip in next iteration if negative cost delta
         if neighbor.cost_delta() < 0:
           if log_neighbors:
             self.log.success("Accepting neighbor {} with negative cost {:.1f}k".format(neighbor, neighbor.cost_delta() / 1e3))
@@ -229,6 +232,13 @@ class SimulatedAnnealingMethod(Method):
             moves[neighbor_name]["rej"] = 0
           moves[neighbor_name]["rej"] += 1
 
+    overall_good_solutions.append(good_solutions - last_good_solutions)
+    overall_accepted_solutions.append(accepted_bad_solutions - last_accepted_bad_solutions)
+    overall_rejected_solutions.append(rejected_bad_solutions - last_rejected_bad_solutions)
+    overall_cost.append(total_cost_change - last_cost_change)
+    temperatures.append(temperature)
+    self.create_checkpoint(trips, i, iterations, log_interval, args.evaluation_id, args.random_seed,
+        temperatures, overall_good_solutions, overall_accepted_solutions, overall_rejected_solutions, overall_cost)
     self.log.info("Finished {} iterations with total cost change of {:.3f}M".format(iterations, total_cost_change / 1e6))
     self.log.info("Evaluated neighbors: {} good, {} accepted/{} rejected bad solutions ({:.1f}/{:.1f}/{:.1f}%)".format(
       good_solutions, accepted_bad_solutions, rejected_bad_solutions,
