@@ -77,6 +77,7 @@ class OptimalHorizontalTripSplitNeighbor(Neighbor):
     while len(self.trips[self.trip_to_split]) < 4:
       self.trip_to_split = np.random.randint(len(trips))
     self.longitude_to_split = None
+    self.first_trip_percentage = None # percentage of gifts that remain in the first trip
     super(OptimalHorizontalTripSplitNeighbor, self).__init__()
 
   def __str__(self):
@@ -126,6 +127,7 @@ class OptimalHorizontalTripSplitNeighbor(Neighbor):
     trip_1 = trip_1[trip_1[:, utils.LAT].argsort()[::-1]]
     trip_2 = trip[trip[:, utils.LON] >= self.longitude_to_split]
     trip_2 = trip_2[trip_2[:, utils.LAT].argsort()[::-1]]
+    self.first_trip_percentage = len(trip_1) / len(trip)
 
     existing_trips = [t[0, utils.TRIP] for t in self.trips]
     new_trip_id = np.max(existing_trips) + 1
