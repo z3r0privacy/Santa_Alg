@@ -11,14 +11,14 @@ from neighbor import Neighbor
 class SplitOneTripIntoTwoNeighbor(Neighbor):
   def __init__(self, trips):
     self.trips = trips
-    self.trip_to_split = np.random.randint(len(trips))
-    while len(self.trips[self.trip_to_split]) < 2:
-      self.trip_to_split = np.random.randint(len(trips))
+    self.trip = np.random.randint(len(trips))
+    while len(self.trips[self.trip]) < 2:
+      self.trip = np.random.randint(len(trips))
     self.index_to_split = None
     super(SplitOneTripIntoTwoNeighbor, self).__init__()
 
   def __str__(self):
-    return "split-{}-at-{}".format(self.trip_to_split, self.index_to_split)
+    return "split-{}-at-{}".format(self.trip, self.index_to_split)
 
   def _find_best_split_index(self, trip):
     minimum_cost = np.finfo(np.float64).max
@@ -40,7 +40,7 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
     if self.cost is not None:
       return self.cost
 
-    trip = self.trips[self.trip_to_split]
+    trip = self.trips[self.trip]
     cost_of_old_trip = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
 
     # find split index with minimum cost
@@ -52,7 +52,7 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
   def apply(self):
     # self.log.debug("Applying {}".format(self))
 
-    trip = self.trips[self.trip_to_split]
+    trip = self.trips[self.trip]
 
     if self.VERIFY_COST_DELTA:
       old = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
@@ -61,11 +61,11 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
     existing_trips = [t[0, utils.TRIP] for t in self.trips]
     new_trip_id = np.max(existing_trips) + 1
     new_trip[:, utils.TRIP] = new_trip_id
-    self.trips[self.trip_to_split] = trip[:self.index_to_split]
+    self.trips[self.trip] = trip[:self.index_to_split]
     self.trips.append(new_trip)
 
     if self.VERIFY_COST_DELTA:
-      new = utils.weighted_trip_length(self.trips[self.trip_to_split][:, utils.LOCATION], self.trips[self.trip_to_split][:, utils.WEIGHT]) + \
+      new = utils.weighted_trip_length(self.trips[self.trip][:, utils.LOCATION], self.trips[self.trip][:, utils.WEIGHT]) + \
           utils.weighted_trip_length(new_trip[:, utils.LOCATION], new_trip[:, utils.WEIGHT])
       utils.verify_costs_are_equal(self.cost_delta(), new-old)
 
@@ -73,21 +73,21 @@ class SplitOneTripIntoTwoNeighbor(Neighbor):
 class OptimalHorizontalTripSplitNeighbor(Neighbor):
   def __init__(self, trips, trip=None):
     self.trips = trips
-    self.trip_to_split = np.random.randint(len(trips)) if trip is None else trip
-    while len(self.trips[self.trip_to_split]) < 4:
-      self.trip_to_split = np.random.randint(len(trips))
+    self.trip = np.random.randint(len(trips)) if trip is None else trip
+    while len(self.trips[self.trip]) < 4:
+      self.trip = np.random.randint(len(trips))
     self.longitude_to_split = None
     self.first_trip_percentage = None # percentage of gifts that remain in the first trip
     super(OptimalHorizontalTripSplitNeighbor, self).__init__()
 
   def __str__(self):
-    return "hsplit-{}-at-{}".format(self.trip_to_split, self.longitude_to_split)
+    return "hsplit-{}-at-{}".format(self.trip, self.longitude_to_split)
 
   def cost_delta(self):
     if self.cost is not None:
       return self.cost
 
-    trip = self.trips[self.trip_to_split]
+    trip = self.trips[self.trip]
     cost_of_old_trip = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
 
     # check splitting in the middle third of longitudes
@@ -118,7 +118,7 @@ class OptimalHorizontalTripSplitNeighbor(Neighbor):
   def apply(self):
     # self.log.debug("Applying {}".format(self))
 
-    trip = self.trips[self.trip_to_split]
+    trip = self.trips[self.trip]
 
     if self.VERIFY_COST_DELTA:
       old = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
@@ -132,11 +132,11 @@ class OptimalHorizontalTripSplitNeighbor(Neighbor):
     existing_trips = [t[0, utils.TRIP] for t in self.trips]
     new_trip_id = np.max(existing_trips) + 1
     trip_2[:, utils.TRIP] = new_trip_id
-    self.trips[self.trip_to_split] = trip_1
+    self.trips[self.trip] = trip_1
     self.trips.append(trip_2)
 
     if self.VERIFY_COST_DELTA:
-      new = utils.weighted_trip_length(self.trips[self.trip_to_split][:, utils.LOCATION], self.trips[self.trip_to_split][:, utils.WEIGHT]) + \
+      new = utils.weighted_trip_length(self.trips[self.trip][:, utils.LOCATION], self.trips[self.trip][:, utils.WEIGHT]) + \
           utils.weighted_trip_length(trip_2[:, utils.LOCATION], trip_2[:, utils.WEIGHT])
       utils.verify_costs_are_equal(self.cost_delta(), new-old)
 
@@ -144,20 +144,20 @@ class OptimalHorizontalTripSplitNeighbor(Neighbor):
 class OptimalVerticalTripSplitNeighbor(Neighbor):
   def __init__(self, trips, trip=None):
     self.trips = trips
-    self.trip_to_split = np.random.randint(len(trips)) if trip is None else trip
-    while len(self.trips[self.trip_to_split]) < 4:
-      self.trip_to_split = np.random.randint(len(trips))
+    self.trip = np.random.randint(len(trips)) if trip is None else trip
+    while len(self.trips[self.trip]) < 4:
+      self.trip = np.random.randint(len(trips))
     self.latitude_to_split = None
     super(OptimalVerticalTripSplitNeighbor, self).__init__()
 
   def __str__(self):
-    return "vsplit-{}-at-{}".format(self.trip_to_split, self.latitude_to_split)
+    return "vsplit-{}-at-{}".format(self.trip, self.latitude_to_split)
 
   def cost_delta(self):
     if self.cost is not None:
       return self.cost
 
-    trip = self.trips[self.trip_to_split]
+    trip = self.trips[self.trip]
     cost_of_old_trip = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
 
     # check splitting in the middle third of latitudes
@@ -188,7 +188,7 @@ class OptimalVerticalTripSplitNeighbor(Neighbor):
   def apply(self):
     # self.log.debug("Applying {}".format(self))
 
-    trip = self.trips[self.trip_to_split]
+    trip = self.trips[self.trip]
 
     if self.VERIFY_COST_DELTA:
       old = utils.weighted_trip_length(trip[:, utils.LOCATION], trip[:, utils.WEIGHT])
@@ -201,11 +201,11 @@ class OptimalVerticalTripSplitNeighbor(Neighbor):
     existing_trips = [t[0, utils.TRIP] for t in self.trips]
     new_trip_id = np.max(existing_trips) + 1
     trip_2[:, utils.TRIP] = new_trip_id
-    self.trips[self.trip_to_split] = trip_1
+    self.trips[self.trip] = trip_1
     self.trips.append(trip_2)
 
     if self.VERIFY_COST_DELTA:
-      new = utils.weighted_trip_length(self.trips[self.trip_to_split][:, utils.LOCATION], self.trips[self.trip_to_split][:, utils.WEIGHT]) + \
+      new = utils.weighted_trip_length(self.trips[self.trip][:, utils.LOCATION], self.trips[self.trip][:, utils.WEIGHT]) + \
           utils.weighted_trip_length(trip_2[:, utils.LOCATION], trip_2[:, utils.WEIGHT])
       utils.verify_costs_are_equal(self.cost_delta(), new-old)
 

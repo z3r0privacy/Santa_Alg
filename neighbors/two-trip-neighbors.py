@@ -12,8 +12,8 @@ from neighbor import Neighbor
 class MoveGiftToAnotherTripNeighbor(Neighbor):
   def __init__(self, trips):
     self.trips = trips
-    if not hasattr(self, "source_trip"):
-      self.source_trip = None
+    if not hasattr(self, "trip"):
+      self.trip = None
     if not hasattr(self, "gift_to_move"):
       self.gift_to_move = None
     self.destination_trip = None
@@ -22,25 +22,25 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
     super(MoveGiftToAnotherTripNeighbor, self).__init__()
 
   def _get_valid_target_trip(self):
-    weight_of_gift = self.trips[self.source_trip][self.gift_to_move][utils.WEIGHT]
+    weight_of_gift = self.trips[self.trip][self.gift_to_move][utils.WEIGHT]
     for i in np.random.permutation(len(self.trips)):
-      if i != self.source_trip and np.sum(self.trips[i][:, utils.WEIGHT]) + weight_of_gift <= utils.WEIGHT_LIMIT:
+      if i != self.trip and np.sum(self.trips[i][:, utils.WEIGHT]) + weight_of_gift <= utils.WEIGHT_LIMIT:
         return i
 
   def __str__(self):
-    return "move-{}:{}-to-{}:{}: {:.5f}M".format(self.source_trip, self.gift_to_move,
+    return "move-{}:{}-to-{}:{}: {:.5f}M".format(self.trip, self.gift_to_move,
         self.destination_trip, self.destination_insertion_index, self.cost_delta() / 1e6)
 
   def cost_delta(self):
     if self.cost is not None:
       return self.cost
 
-    if self.source_trip is None:
-      self.source_trip = np.random.randint(len(self.trips))
-      while len(self.trips[self.source_trip]) < 2:
-        self.source_trip = np.random.randint(len(self.trips))
+    if self.trip is None:
+      self.trip = np.random.randint(len(self.trips))
+      while len(self.trips[self.trip]) < 2:
+        self.trip = np.random.randint(len(self.trips))
 
-    source = self.trips[self.source_trip]
+    source = self.trips[self.trip]
 
     if self.gift_to_move is not None or self.destination_trip is not None or self.destination_insertion_index is not None or self.cost_to_insert_in_destination is not None:
       # we should have *all* of these set
@@ -62,7 +62,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
   def apply(self):
     # self.log.debug("Applying {}".format(self))
 
-    source = self.trips[self.source_trip]
+    source = self.trips[self.trip]
     destination = self.trips[self.destination_trip]
 
     if self.VERIFY_COST_DELTA:
@@ -76,7 +76,7 @@ class MoveGiftToAnotherTripNeighbor(Neighbor):
     self.trips[self.destination_trip] = destination
 
     source = np.delete(source, self.gift_to_move, axis=0)
-    self.trips[self.source_trip] = source
+    self.trips[self.trip] = source
 
     if self.VERIFY_COST_DELTA:
       new = utils.weighted_trip_length(source[:, utils.LOCATION], source[:, utils.WEIGHT]) + \
@@ -88,17 +88,17 @@ class MoveGiftToLightestTripNeighbor(MoveGiftToAnotherTripNeighbor):
   def __init__(self, trips):
     self.destination_trip = self._get_lightest_target_trip(trips)
 
-    self.source_trip = np.random.randint(len(trips))
-    while len(self.trips[self.source_trip]) < 2:
-      self.source_trip = np.random.randint(len(trips))
-    self.gift_to_move = np.random.randint(len(trips[self.source_trip]))
-    while self.source_trip == self.destination_trip or  trips[self.destination_trip][:, utils.WEIGHT].sum() + trips[self.source_trip][self.gift_to_move][utils.WEIGHT] > utils.WEIGHT_LIMIT:
-      self.source_trip = np.random.randint(len(trips))
-      self.gift_to_move = np.random.randint(len(trips[self.source_trip]))
+    self.trip = np.random.randint(len(trips))
+    while len(self.trips[self.trip]) < 2:
+      self.trip = np.random.randint(len(trips))
+    self.gift_to_move = np.random.randint(len(trips[self.trip]))
+    while self.trip == self.destination_trip or  trips[self.destination_trip][:, utils.WEIGHT].sum() + trips[self.trip][self.gift_to_move][utils.WEIGHT] > utils.WEIGHT_LIMIT:
+      self.trip = np.random.randint(len(trips))
+      self.gift_to_move = np.random.randint(len(trips[self.trip]))
     super(MoveGiftToLightestTripNeighbor, self).__init__(trips)
 
   def __str__(self):
-    return "move-{}:{}-to-lightest-{}:{}".format(self.source_trip, self.gift_to_move,
+    return "move-{}:{}-to-lightest-{}:{}".format(self.trip, self.gift_to_move,
         self.destination_trip, self.destination_insertion_index)
 
   def _get_lightest_target_trip(self, trips):
@@ -110,16 +110,16 @@ class MoveGiftToLightestTripNeighbor(MoveGiftToAnotherTripNeighbor):
 class MoveGiftToOptimalTripNeighbor(MoveGiftToAnotherTripNeighbor):
   def __init__(self, trips, trip=None, gift_to_move=None):
     if trip is None:
-      self.source_trip = np.random.randint(len(trips))
-      while len(trips[self.source_trip]) < 2:
-        self.source_trip = np.random.randint(len(trips))
+      self.trip = np.random.randint(len(trips))
+      while len(trips[self.trip]) < 2:
+        self.trip = np.random.randint(len(trips))
     else:
-      self.source_trip = trip
-    self.gift_to_move = np.random.randint(len(trips[self.source_trip])) if gift_to_move is None else gift_to_move
+      self.trip = trip
+    self.gift_to_move = np.random.randint(len(trips[self.trip])) if gift_to_move is None else gift_to_move
     super(MoveGiftToOptimalTripNeighbor, self).__init__(trips)
 
   def __str__(self):
-    return "move-{}:{}-to-optimal-{}:{}".format(self.source_trip, self.gift_to_move,
+    return "move-{}:{}-to-optimal-{}:{}".format(self.trip, self.gift_to_move,
         self.destination_trip, self.destination_insertion_index)
 
   def find_close_trips(self, gift, trip_index_to_skip):
@@ -149,11 +149,11 @@ class MoveGiftToOptimalTripNeighbor(MoveGiftToAnotherTripNeighbor):
     if self.cost is not None:
       return self.cost
 
-    gift = self.trips[self.source_trip][self.gift_to_move]
+    gift = self.trips[self.trip][self.gift_to_move]
 
     # find candidates for optimal destination trip
     # trips are good candidates if inserting the gift doesn't add a (big) detour
-    candidate_trips = self.find_close_trips(gift, self.source_trip)
+    candidate_trips = self.find_close_trips(gift, self.trip)
 
     best_candidate = None
     best_index_in_candidate = None

@@ -81,9 +81,9 @@ class SimulatedAnnealingMethod(Method):
     if all_trips is None:
       return
 
-    # TODO: Try entirely random neighbors without merging trips (all the "fast" neighbors)
+    # TODO: Try entirely random neighbors without merging trips (currently, we always do the best)
 
-    iterations = int(1e4)
+    iterations = int(7e4) # 3e4 takes ~2h
     log_interval = int(iterations / 1e3)
     checkpoint_interval = int(iterations / 1e2)
     bad_trips_iterations = int(iterations / 1e1)
@@ -94,15 +94,16 @@ class SimulatedAnnealingMethod(Method):
     treat_slow_jobs_differntly = True
 
     # hyperparameters
-    initial_temperature = args.temperature or 4e4
+    initial_temperature = args.temperature or 2e4
     temperature_decrease = int(iterations / 5e2)
-    alpha = args.alpha or 0.95
+    alpha = args.alpha or 0.9
 
     moves = {}
     temperature = initial_temperature
 
     # split all trips into separate trips
     trips = [all_trips[all_trips.TripId == t].values for t in all_trips.TripId.unique()]
+    last_trip_index = None
 
     # variables for stats
     good_solutions = 0
@@ -157,8 +158,12 @@ class SimulatedAnnealingMethod(Method):
           temperature *= alpha
 
         # select neighbor
-        # if we're working with bad trips, get a trip index
-        trip = utils.get_index_of_inefficient_trip(trips) if i < bad_trips_iterations else None
+        # if the last iteration had a cost decrease, try optimizing the same trip again
+        if last_trip_index is not None:
+          trip = last_trip_index
+        else:
+          # if we're working with bad trips, get a trip index
+          trip = utils.get_index_of_inefficient_trip(trips) if i < bad_trips_iterations else None
         if i == bad_trips_iterations:
           self.log.warning("No longer optimizing bad trips specifically")
         neighbors = self._get_neighbors(trips, trip)
@@ -192,8 +197,8 @@ class SimulatedAnnealingMethod(Method):
             neighbor = slow_neighbor
         neighbor_name = neighbor.__class__.__name__
 
-        # TODO: Optimize same trip in next iteration if negative cost delta
         if neighbor.cost_delta() < 0:
+          last_trip_index = trip
           if log_neighbors:
             self.log.success("Accepting neighbor {} with negative cost {:.1f}k".format(neighbor, neighbor.cost_delta() / 1e3))
           total_cost_change += neighbor.cost_delta()
@@ -207,6 +212,7 @@ class SimulatedAnnealingMethod(Method):
           self.check_gifts(trips, neighbor)
           continue
 
+        last_trip_index = None
         accepting_probability = np.exp(-neighbor.cost_delta()/temperature)
         if accepting_probability > np.random.rand():
           if log_neighbors:

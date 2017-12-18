@@ -30,7 +30,7 @@ class CutExtremeTripsMethod(Method):
     trips = [all_trips[all_trips.TripId == t].values for t in all_trips.TripId.unique()]
 
     maximum_weight = 900
-    maximum_length = 85
+    maximum_length = 90
     large_trips = []
     for i, trip in enumerate(trips):
       if trip[:, utils.WEIGHT].sum() > maximum_weight and len(trip) > maximum_length:
@@ -43,10 +43,12 @@ class CutExtremeTripsMethod(Method):
       horizontal_split = OptimalHorizontalTripSplitNeighbor(trips, large_trip_index)
       vertical_split = OptimalVerticalTripSplitNeighbor(trips, large_trip_index)
       neighbor = horizontal_split if horizontal_split.cost_delta() < vertical_split.cost_delta() else vertical_split
+      previous_length = len(trips[large_trip_index])
+      previous_weight = trips[large_trip_index][:, utils.WEIGHT].sum()
       neighbor.apply()
-      self.log.debug("Applying {}\t(new trip: {:.1f}%, cost: {:.3f}M) to trip {} (length {}, weight {:.1f})".format(
+      self.log.debug("Applying {}\t(new trip gifts: {:.1f}%, cost: {:.3f}M) to trip {} (length {}, weight {:.1f})".format(
         neighbor, 100 * neighbor.first_trip_percentage,
-        neighbor.cost_delta() / 1e6, large_trip_index, len(trips[large_trip_index]), trips[large_trip_index][:, utils.WEIGHT].sum()))
+        neighbor.cost_delta() / 1e6, large_trip_index, previous_length, previous_weight))
       total_cost_change += neighbor.cost_delta()
 
     self.log.info("Total cost of all modifications: {:.5f}M".format(total_cost_change / 1e6))

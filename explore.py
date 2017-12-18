@@ -90,7 +90,7 @@ def print_stats(file_name=None, df=None, plots=False):
     if file_name is not None:
       fig.suptitle("Stats for {}".format(file_name))
 
-def plot_metrics(file_name, cumulative=True, cost_factor=1e4):
+def plot_metrics(file_name, cumulative=True, cost_factor=1e4, temperature_factor=1e3):
   with open(file_name, "rb") as fh:
     (iterations, interval, temperatures, good_solutions, accepted_solutions, rejected_solutions, costs) = pickle.load(fh)
   if cumulative:
@@ -103,7 +103,7 @@ def plot_metrics(file_name, cumulative=True, cost_factor=1e4):
   plt.plot(x, good_solutions, label="Good solutions", color="green")
   plt.plot(x, accepted_solutions, label="Accepted solutions", color="orange")
   plt.plot(x, rejected_solutions, label="Rejected solutions", color="red")
-  plt.plot(x, [temp / 1e3 for temp in temperatures], label="Temperature [1k]", color="gray")
+  plt.plot(x, [temp / temperature_factor for temp in temperatures], label="Temperature [{}]".format(temperature_factor), color="gray")
   plt.legend()
   plt.grid()
   plt.tight_layout()
