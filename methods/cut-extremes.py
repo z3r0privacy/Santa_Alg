@@ -20,7 +20,7 @@ class CutExtremeTripsMethod(Method):
 
   def run(self, args):
     """
-    Idea: TBD
+    Idea: Split the largest (longest and heaviest) trips into two parts.
     """
     all_trips = self._load_trips_from_file(args)
     if all_trips is None:
@@ -30,7 +30,7 @@ class CutExtremeTripsMethod(Method):
     trips = [all_trips[all_trips.TripId == t].values for t in all_trips.TripId.unique()]
 
     maximum_weight = 900
-    maximum_length = 90
+    maximum_length = 95
     large_trips = []
     for i, trip in enumerate(trips):
       if trip[:, utils.WEIGHT].sum() > maximum_weight and len(trip) > maximum_length:

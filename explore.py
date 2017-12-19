@@ -90,7 +90,7 @@ def print_stats(file_name=None, df=None, plots=False):
     if file_name is not None:
       fig.suptitle("Stats for {}".format(file_name))
 
-def plot_metrics(file_name, cumulative=True, cost_factor=1e4, temperature_factor=1e3):
+def plot_metrics(file_name, cumulative=True, cost_factor=1e4, rejected_solutions_factor=1e1, temperature_factor=1e0):
   with open(file_name, "rb") as fh:
     (iterations, interval, temperatures, good_solutions, accepted_solutions, rejected_solutions, costs) = pickle.load(fh)
   if cumulative:
@@ -99,10 +99,11 @@ def plot_metrics(file_name, cumulative=True, cost_factor=1e4, temperature_factor
     accepted_solutions = np.cumsum(accepted_solutions)
     rejected_solutions = np.cumsum(rejected_solutions)
   x = np.linspace(0, iterations, int(iterations/interval))
+  plt.figure()
   plt.plot(x, [cost / cost_factor for cost in costs], label="Cost change [{}]".format(cost_factor), color="blue")
   plt.plot(x, good_solutions, label="Good solutions", color="green")
   plt.plot(x, accepted_solutions, label="Accepted solutions", color="orange")
-  plt.plot(x, rejected_solutions, label="Rejected solutions", color="red")
+  plt.plot(x, [rej / rejected_solutions_factor for rej in rejected_solutions], label="Rejected solutions [{}]".format(rejected_solutions_factor), color="red")
   plt.plot(x, [temp / temperature_factor for temp in temperatures], label="Temperature [{}]".format(temperature_factor), color="gray")
   plt.legend()
   plt.grid()

@@ -81,9 +81,7 @@ class SimulatedAnnealingMethod(Method):
     if all_trips is None:
       return
 
-    # TODO: Try entirely random neighbors without merging trips (currently, we always do the best)
-
-    iterations = int(7e4) # 3e4 takes ~2h
+    iterations = int(5e4) # 3e4 takes ~2h
     log_interval = int(iterations / 1e3)
     checkpoint_interval = int(iterations / 1e2)
     bad_trips_iterations = int(iterations / 1e1)
@@ -94,9 +92,9 @@ class SimulatedAnnealingMethod(Method):
     treat_slow_jobs_differntly = True
 
     # hyperparameters
-    initial_temperature = args.temperature or 2e4
+    initial_temperature = args.temperature or 2e4 # TODO: Decrease for the next runs
     temperature_decrease = int(iterations / 5e2)
-    alpha = args.alpha or 0.9
+    alpha = args.alpha or 0.925 # TODO: Decrease for the next runs
 
     moves = {}
     temperature = initial_temperature
