@@ -17,10 +17,12 @@ class Method(abc.ABC):
     self.current_best = 16.87566 * 1e9 # single-trip optimized balanced antarctica with north->south ordering
     self.current_best = 16.57840 * 1e9 # slightly sa-optimized, single-trip optimized balanced antarctica with north->south ordering
     self.current_best = 12.67695 * 1e9 # best with balanced
+    self.current_best = 12.66155 * 1e9 # best with balanced-split
     self.current_best = 12.48137 * 1e9 # best with eye-split
-    self.current_best = 12.47243 * 1e9 # best with eye-massivesplit
-    self.current_best = 12.47180 * 1e9 # best with eye-doublesplit
-    self.current_best = 12.46879 * 1e9 # best with eye
+    self.current_best = 12.47072 * 1e9 # best with eye-massivesplit
+    self.current_best = 12.47018 * 1e9 # best with eye-doublesplit
+    self.current_best = 12.46894 * 1e9 # best with eye-triplesplit
+    self.current_best = 12.46470 * 1e9 # best with eye
     self.current_score = None
     self.current_trip_count = None
     self.gifts = gifts
